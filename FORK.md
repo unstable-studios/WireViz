@@ -89,19 +89,21 @@ Worth having because `LR` produces extremely wide, short drawings — a real
 harness comes out around 15:1, which does not print. `TB` on the same model
 gives roughly 2:1.
 
-🛑 **`TB` is not finished.** It lays the graph out correctly and the wires are
-drawn as lines rather than lens shapes, but wires are routed **through other
-nodes**, crossing their labels.
+Under `TB`, every connector and cable table is **transposed**: pins run
+horizontally, incoming ports sit on the node's top edge and outgoing ports on
+its bottom edge, and cable colour stripes are vertical bars spanning the full
+node height. Component info (name, part numbers, type, images, notes) moves
+beside the pin strip instead of above it — it has to, because a strip below a
+stacked info block would leave its ports interior to the node and route wires
+across the info text. Wires therefore attach flush on the faces the graph
+flows through, and nothing routes through a node body or label.
 
-The cause is structural. Connector ports are named `p{n}l` and `p{n}r`: every
-pin sits on the **left or right edge** of the node's HTML table, because those
-tables are built for left-to-right flow. Under `TB` an edge attaches to the
-south face of a right-edge cell and then travels down across whatever node is
-below it.
+All shipped examples render correctly under `TB`; ex14 comes out at roughly
+1:3.5 instead of 9:1. Known cosmetic quirk: a pin **loop** on a congested
+connector may be drawn on the node's far side.
 
-Finishing `TB` means transposing every connector and cable table so pins sit on
-the top and bottom edges — a rework of the label builder in `wv_gv_html.py`,
-not a flag. Until then `TB` is useful for experimenting and not for output.
+`LR` output is byte-identical to previous versions (asserted in
+`tests/test_tb_layout.py`).
 
 ## Tests
 
