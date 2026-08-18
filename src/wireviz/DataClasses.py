@@ -59,8 +59,17 @@ class Options:
     mini_bom_mode: bool = True
     template_separator: str = "."
     rankdir: str = "LR"
+    ranksep: float = 2
+    nodesep: float = 0.33
+    wire_thickness: float = 2
 
     def __post_init__(self):
+        for attr in ("ranksep", "nodesep", "wire_thickness"):
+            value = getattr(self, attr)
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                raise ValueError(f"{attr} must be a number, not {value!r}")
+            if value <= 0:
+                raise ValueError(f"{attr} must be positive, not {value!r}")
         if self.rankdir not in ("LR", "TB"):
             raise ValueError(
                 f'rankdir must be "LR" or "TB", not {self.rankdir!r}. '
