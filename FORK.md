@@ -66,6 +66,43 @@ Splitting a description across files is equivalent to writing it in one file —
 `tests/test_merge.py` asserts that the generated GraphViz source is identical
 either way.
 
+## `rankdir` — top-to-bottom layout that actually renders
+
+`rankdir` was hardcoded to `LR`, and so were the port compass points every wire
+attaches to (`:e` on one end, `:w` on the other). Setting `rankdir=TB` through
+`tweak` therefore produced a graph where every edge had to loop sideways to
+reach a west-facing port on a node below it — and since wires are drawn as
+**multi-colour parallel edges**, the colour stripes splay apart around that
+loop. Each wire renders as a lens or squashed oval instead of a line.
+
+`options.rankdir` sets both together:
+
+```yaml
+options:
+  rankdir: TB
+```
+
+`LR` (the default) keeps east/west compass points; `TB` uses south/north. `RL`
+and `BT` are rejected rather than silently mis-rendering.
+
+Worth having because `LR` produces extremely wide, short drawings — a real
+harness comes out around 15:1, which does not print. `TB` on the same model
+gives roughly 2:1.
+
+🛑 **`TB` is not finished.** It lays the graph out correctly and the wires are
+drawn as lines rather than lens shapes, but wires are routed **through other
+nodes**, crossing their labels.
+
+The cause is structural. Connector ports are named `p{n}l` and `p{n}r`: every
+pin sits on the **left or right edge** of the node's HTML table, because those
+tables are built for left-to-right flow. Under `TB` an edge attaches to the
+south face of a right-edge cell and then travels down across whatever node is
+below it.
+
+Finishing `TB` means transposing every connector and cable table so pins sit on
+the top and bottom edges — a rework of the label builder in `wv_gv_html.py`,
+not a flag. Until then `TB` is useful for experimenting and not for output.
+
 ## Tests
 
 ```sh
