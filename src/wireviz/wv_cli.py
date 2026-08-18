@@ -5,12 +5,14 @@ import sys
 from pathlib import Path
 
 import click
+import yaml
 
 if __name__ == "__main__":
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import wireviz.wireviz as wv
 from wireviz import APP_NAME, __version__
+from wireviz import wv_merge, wv_yaml
 from wireviz.wv_errors import WireVizError
 from wireviz.wv_helper import file_read_text
 
@@ -66,6 +68,15 @@ epilog += ", ".join([f"{key} ({value.upper()})" for key, value in format_codes.i
     help="File name (without extension) to use for output files, if different from input file name.",
 )
 @click.option(
+    "-m",
+    "--merge",
+    is_flag=True,
+    default=False,
+    help="Treat all input FILEs as parts of ONE harness and render a single "
+    "output, instead of rendering each file separately. Any --prepend files "
+    "are prepended to each input in turn, so YAML anchors resolve per file.",
+)
+@click.option(
     "--strict",
     is_flag=True,
     default=False,
@@ -79,7 +90,7 @@ epilog += ", ".join([f"{key} ({value.upper()})" for key, value in format_codes.i
     default=False,
     help=f"Output {APP_NAME} version and exit.",
 )
-def wireviz(file, format, prepend, output_dir, output_name, strict, version):
+def wireviz(file, format, prepend, output_dir, output_name, merge, strict, version):
     """
     Parses the provided FILE and generates the specified outputs.
     """
@@ -123,32 +134,22 @@ def wireviz(file, format, prepend, output_dir, output_name, strict, version):
     else:
         prepend_input = ""
 
-    # run WireVIz on each input file
+    filepaths = [Path(f) for f in filepaths]
     for file in filepaths:
-        file = Path(file)
         if not file.exists():
             raise Exception(f"File does not exist:\n{file}")
 
-        # file_out = file.with_suffix("") if not output_file else output_file
-        _output_dir = file.parent if not output_dir else output_dir
-        _output_name = file.stem if not output_name else output_name
+    image_paths = {f.parent for f in filepaths}
+    for p in prepend:
+        image_paths.add(Path(p).parent)
 
-        print("Input file:  ", file)
+    def render(inp, _output_dir, _output_name):
         print(
             "Output file: ", f"{Path(_output_dir / _output_name)}.{output_formats_str}"
         )
-
-        yaml_input = file_read_text(file)
-        file_dir = file.parent
-
-        yaml_input = prepend_input + yaml_input
-        image_paths = {file_dir}
-        for p in prepend:
-            image_paths.add(Path(p).parent)
-
         try:
             wv.parse(
-                yaml_input,
+                inp,
                 output_formats=output_formats,
                 output_dir=_output_dir,
                 output_name=_output_name,
@@ -159,6 +160,42 @@ def wireviz(file, format, prepend, output_dir, output_name, strict, version):
             # A clean message, not a traceback: these are input problems, and
             # under --strict they are the expected way to report them.
             raise SystemExit(f"Error: {e}")
+
+    if merge:
+        # One harness from many files. Each input is parsed on its own with the
+        # prepended text in front of it, so anchors defined there resolve in
+        # every file; the parsed results are then combined at the data level.
+        # Concatenating the text instead would let a duplicate top-level key
+        # silently discard an entire file's worth of definitions.
+        # A list of pairs rather than a dict: the same file passed twice must
+        # surface as a duplicate-component error, not silently deduplicate.
+        sources = []
+        for file in filepaths:
+            print("Input file:  ", file)
+            try:
+                sources.append((
+                    str(file),
+                    wv_yaml.safe_load(prepend_input + file_read_text(file), strict=strict)
+                    or {},
+                ))
+            except (WireVizError, yaml.YAMLError) as e:
+                raise SystemExit(f"Error: {file}: {e}")
+        try:
+            merged = wv_merge.merge(sources)
+        except WireVizError as e:
+            raise SystemExit(f"Error: {e}")
+
+        _output_dir = filepaths[0].parent if not output_dir else output_dir
+        _output_name = filepaths[0].stem if not output_name else output_name
+        render(merged, Path(_output_dir), _output_name)
+    else:
+        # run WireViz on each input file
+        for file in filepaths:
+            _output_dir = file.parent if not output_dir else output_dir
+            _output_name = file.stem if not output_name else output_name
+
+            print("Input file:  ", file)
+            render(prepend_input + file_read_text(file), Path(_output_dir), _output_name)
 
     print()
 
