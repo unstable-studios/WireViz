@@ -161,6 +161,64 @@ class Harness:
         if to_name in self.connectors:
             self.connectors[to_name].activate_pin(to_pin, Side.LEFT)
 
+    def _wire_display_rows(self, cable: Cable) -> List[Tuple[int, Tuple[Any, Any]]]:
+        """Wire rows of a cable node in display order.
+
+        Each entry is (wire number, (color, wirelabel)). By default rows
+        appear in wire-number order. Under ``sort_wires: by_pin`` they are
+        ordered to match the pin positions the wires connect to, so the
+        edges between connectors and the cable do not cross in the drawing.
+        Connector pins and cable wire rows are fixed HTML-table ports that
+        GraphViz cannot reorder; permuting the display order of the rows is
+        the only way to remove these crossings. Wires without any
+        connection keep wire-number order after the sorted ones.
+        """
+        rows = list(enumerate(zip_longest(cable.colors, cable.wirelabels), 1))
+        if self.options.sort_wires != "by_pin":
+            return rows
+
+        # Barycenter heuristic: each wire's key is the mean of its endpoint
+        # pin positions on both sides. When both sides list pins in the same
+        # non-pin order (connection sets written against pin order), sorting
+        # straightens both sides at once. When only one side mismatches, all
+        # keys tie and the stable sort leaves the rows untouched -- that
+        # single crossing is unavoidable, so it is left where it is.
+        connector_order = {Side.LEFT: [], Side.RIGHT: []}
+
+        def position(side, name, pin):
+            connector = self.connectors.get(name)
+            if connector is None or pin not in connector.pins:
+                return None
+            if name not in connector_order[side]:
+                connector_order[side].append(name)
+            # Stack connectors of one side above each other, in
+            # first-connection order, pins within each connector in pin order.
+            return connector_order[side].index(name) * 10000 + connector.pins.index(
+                pin
+            )
+
+        positions = {}  # wire number -> list of endpoint positions
+        for connection in cable.connections:
+            if not isinstance(connection.via_port, int):
+                continue  # shield: rendered separately, below the wire rows
+            for side, name, pin in (
+                (Side.LEFT, connection.from_name, connection.from_pin),
+                (Side.RIGHT, connection.to_name, connection.to_pin),
+            ):
+                if name is None or pin is None:
+                    continue
+                pos = position(side, name, pin)
+                if pos is not None:
+                    positions.setdefault(connection.via_port, []).append(pos)
+
+        def sort_key(row):
+            i, _ = row
+            if i not in positions:
+                return (1, i)  # unconnected wires last, in wire order
+            return (0, sum(positions[i]) / len(positions[i]))
+
+        return sorted(rows, key=sort_key)
+
     @property
     def _compass(self) -> Tuple[str, str]:
         """Port compass points for (outgoing, incoming) edge ends.
@@ -352,9 +410,7 @@ class Harness:
             wirehtml.append('<table border="0" cellspacing="0" cellborder="0">')
             wirehtml.append("   <tr><td>&nbsp;</td></tr>")
 
-            for i, (connection_color, wirelabel) in enumerate(
-                zip_longest(cable.colors, cable.wirelabels), 1
-            ):
+            for i, (connection_color, wirelabel) in self._wire_display_rows(cable):
                 wirehtml.append("   <tr>")
                 wirehtml.append(f"    <td><!-- {i}_in --></td>")
                 wirehtml.append(f"    <td>")

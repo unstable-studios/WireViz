@@ -59,8 +59,13 @@ class Options:
     mini_bom_mode: bool = True
     template_separator: str = "."
     rankdir: str = "LR"
+    sort_wires: Optional[str] = None
 
     def __post_init__(self):
+        if self.sort_wires not in (None, "by_pin"):
+            raise ValueError(
+                f'sort_wires must be "by_pin" or unset, not {self.sort_wires!r}'
+            )
         if self.rankdir not in ("LR", "TB"):
             raise ValueError(
                 f'rankdir must be "LR" or "TB", not {self.rankdir!r}. '
