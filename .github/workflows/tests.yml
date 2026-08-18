@@ -1,0 +1,82 @@
+name: Tests
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  pytest:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12", "3.13"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # WireViz shells out to GraphViz to render; without it the parse tests
+      # pass but anything touching output fails.
+      - uses: ts-graphviz/setup-graphviz@v2
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install . pytest
+
+      - name: Run tests
+        run: pytest tests/ -v
+
+      # The fork's whole purpose is that --strict and --merge do not silently
+      # let input through. Assert the CLI actually exits nonzero, which the
+      # unit tests cannot cover.
+      - name: Guards fail the build
+        run: |
+          set -eu
+          cat > /tmp/orphan.yml <<'YAML'
+          connectors:
+            X1: {type: D-Sub, pinlabels: [a]}
+            ORPHAN: {type: Molex, pinlabels: [a]}
+          cables:
+            W1: {colors: [BK]}
+          connections:
+            - - X1: [1]
+              - W1: [1]
+              - X1: [1]
+          YAML
+          cat > /tmp/dup.yml <<'YAML'
+          connectors:
+            X1: {type: D-Sub, pinlabels: [a]}
+          cables:
+            W1: {colors: [BK]}
+          connections:
+            - - X1: [1]
+              - W1: [1]
+              - X1: [1]
+          connectors:
+            X2: {type: Molex, pinlabels: [a]}
+          YAML
+
+          expect_failure() {
+            if wireviz "$@" >/dev/null 2>&1; then
+              echo "FAIL: expected nonzero exit from: wireviz $*"
+              exit 1
+            fi
+            echo "ok: rejected: wireviz $*"
+          }
+
+          expect_failure --strict -f s -o /tmp /tmp/orphan.yml
+          expect_failure --strict -f s -o /tmp /tmp/dup.yml
+          expect_failure --merge -f s -o /tmp -O m /tmp/orphan.yml /tmp/orphan.yml
+
+          # Without the flags, the same input must still succeed: the fork does
+          # not change default behaviour.
+          wireviz -f s -o /tmp /tmp/orphan.yml >/dev/null
+          echo "ok: default behaviour unchanged"
+
+      # Upstream's own examples must keep building, so the fork stays mergeable.
+      - name: Upstream examples still build
+        run: |
+          cd src/wireviz
+          PYTHONPATH=$(pwd):$PYTHONPATH python build_examples.py
