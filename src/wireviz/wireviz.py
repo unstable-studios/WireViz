@@ -11,7 +11,9 @@ import yaml
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent))  # add src/wireviz to PATH
 
+from wireviz import wv_yaml
 from wireviz.DataClasses import Metadata, Options, Tweak
+from wireviz.wv_errors import UnreferencedComponentsError
 from wireviz.Harness import Harness
 from wireviz.wv_helper import (
     expand,
@@ -31,6 +33,7 @@ def parse(
     output_dir: Union[str, Path] = None,
     output_name: Union[None, str] = None,
     image_paths: Union[Path, str, List] = [],
+    strict: bool = False,
 ) -> Any:
     """
     This function takes an input, parses it as a WireViz Harness file,
@@ -88,7 +91,7 @@ def parse(
     if not output_formats and not return_types:
         raise Exception("No output formats or return types specified")
 
-    yaml_data, yaml_file = _get_yaml_data_and_path(inp)
+    yaml_data, yaml_file = _get_yaml_data_and_path(inp, strict=strict)
     if not isinstance(yaml_data, dict):
         raise TypeError(
             f"Expected a dict as top-level YAML input, but got: {type(yaml_data)}"
@@ -362,7 +365,7 @@ def parse(
                         # mate two connectors as a whole
                         harness.add_mate_component(from_name, to_name, designator)
 
-    # warn about unused templates
+    # report components that no connection set references
 
     proposed_components = list(template_connectors.keys()) + list(
         template_cables.keys()
@@ -370,10 +373,14 @@ def parse(
     used_components = set(designators_and_templates.values())
     forgotten_components = [c for c in proposed_components if not c in used_components]
     if len(forgotten_components) > 0:
-        print(
-            "Warning: The following components are not referenced in any connection set:"
+        message = (
+            "The following components are not referenced in any connection set, "
+            "and are therefore omitted from both the diagram and the BOM: "
+            + ", ".join(forgotten_components)
         )
-        print(", ".join(forgotten_components))
+        if strict:
+            raise UnreferencedComponentsError(message, forgotten_components)
+        print(f"Warning: {message}")
 
     # harness population completed =============================================
 
@@ -402,7 +409,9 @@ def parse(
         return tuple(returns) if len(returns) != 1 else returns[0]
 
 
-def _get_yaml_data_and_path(inp: Union[str, Path, Dict]) -> (Dict, Path):
+def _get_yaml_data_and_path(
+    inp: Union[str, Path, Dict], strict: bool = False
+) -> (Dict, Path):
     # determine whether inp is a file path, a YAML string, or a Dict
     if not isinstance(inp, Dict):  # received a str or a Path
         try:
@@ -427,7 +436,7 @@ def _get_yaml_data_and_path(inp: Union[str, Path, Dict]) -> (Dict, Path):
             # file does not exist; assume inp is a YAML string
             yaml_str = inp
             yaml_path = None
-        yaml_data = yaml.safe_load(yaml_str)
+        yaml_data = wv_yaml.safe_load(yaml_str, strict=strict)
     else:
         # received a Dict, use as-is
         yaml_data = inp
