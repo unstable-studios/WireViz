@@ -103,6 +103,26 @@ Finishing `TB` means transposing every connector and cable table so pins sit on
 the top and bottom edges — a rework of the label builder in `wv_gv_html.py`,
 not a flag. Until then `TB` is useful for experimenting and not for output.
 
+## Interactive HTML output
+
+The built-in `simple` HTML template is now interactive; regenerate with
+`-f h` and open the `.html` in a browser:
+
+- **Fit, pan and zoom** — the diagram opens fitted to the window; scroll to
+  zoom at the cursor, drag to pan, double-click to re-fit. Wide harnesses no
+  longer force horizontal page scrolling.
+- **Net tracing** — hover any wire to highlight its entire electrical net,
+  through splices and daisy-chained cables, while everything else dims.
+- **BOM linkage** — click a BOM row to highlight and center its component(s)
+  in the diagram; click again, click empty space, or press Escape to clear.
+
+This works because the generator now emits `class` attributes on every node
+(`wv-part wv-dsg-<designator>`) and wire edge (`wv-wire` plus `wv-net-…`
+tokens naming the cable wire and connector pin it lands on). GraphViz passes
+them through to SVG, where the template's script unions the tokens into nets.
+The attributes are inert in PNG/SVG-only output and available to any
+downstream tooling. Custom templates (e.g. `din-6771`) are unchanged.
+
 ## Tests
 
 ```sh
