@@ -12,7 +12,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_1" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_2 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -21,7 +21,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_2" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_3 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -30,7 +30,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_3" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_4 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -39,7 +39,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_4" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_5 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -48,7 +48,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_5" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_6 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -57,7 +57,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_6" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_7 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -66,7 +66,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_7" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_8 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -75,7 +75,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_8" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_9 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -84,7 +84,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_9" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_10 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -93,7 +93,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_10" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_11 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -102,7 +102,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_11" fillcolor="#FFFFFF" shape=box style=filled]
 	__F_12 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -111,25 +111,25 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-__F_12" fillcolor="#FFFFFF" shape=box style=filled]
 	edge [color="#000000:#895956:#000000"]
-	__F_1:e -- W1:w1:w
-	W1:w1:e -- __F_7:w
+	__F_1:e -- W1:w1:w [class="wv-wire wv-net-W1-w1 wv-net-__F_1-p1"]
+	W1:w1:e -- __F_7:w [class="wv-wire wv-net-W1-w1 wv-net-__F_7-p1"]
 	edge [color="#000000:#ff0000:#000000"]
-	__F_2:e -- W1:w2:w
-	W1:w2:e -- __F_8:w
+	__F_2:e -- W1:w2:w [class="wv-wire wv-net-W1-w2 wv-net-__F_2-p1"]
+	W1:w2:e -- __F_8:w [class="wv-wire wv-net-W1-w2 wv-net-__F_8-p1"]
 	edge [color="#000000:#ff8000:#000000"]
-	__F_3:e -- W1:w3:w
-	W1:w3:e -- __F_9:w
+	__F_3:e -- W1:w3:w [class="wv-wire wv-net-W1-w3 wv-net-__F_3-p1"]
+	W1:w3:e -- __F_9:w [class="wv-wire wv-net-W1-w3 wv-net-__F_9-p1"]
 	edge [color="#000000:#ffff00:#000000"]
-	__F_4:e -- W1:w4:w
-	W1:w4:e -- __F_10:w
+	__F_4:e -- W1:w4:w [class="wv-wire wv-net-W1-w4 wv-net-__F_4-p1"]
+	W1:w4:e -- __F_10:w [class="wv-wire wv-net-W1-w4 wv-net-__F_10-p1"]
 	edge [color="#000000:#00ff00:#000000"]
-	__F_5:e -- W1:w5:w
-	W1:w5:e -- __F_11:w
+	__F_5:e -- W1:w5:w [class="wv-wire wv-net-W1-w5 wv-net-__F_5-p1"]
+	W1:w5:e -- __F_11:w [class="wv-wire wv-net-W1-w5 wv-net-__F_11-p1"]
 	edge [color="#000000:#0066ff:#000000"]
-	__F_6:e -- W1:w6:w
-	W1:w6:e -- __F_12:w
+	__F_6:e -- W1:w6:w [class="wv-wire wv-net-W1-w6 wv-net-__F_6-p1"]
+	W1:w6:e -- __F_12:w [class="wv-wire wv-net-W1-w6 wv-net-__F_12-p1"]
 	W1 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -247,5 +247,5 @@ graph {
   </table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style="filled,dashed"]
+> class="wv-part wv-dsg-W1" fillcolor="#FFFFFF" shape=box style="filled,dashed"]
 }

@@ -39,7 +39,7 @@ graph {
   </table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-X1" fillcolor="#FFFFFF" shape=box style=filled]
 	X2 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -79,7 +79,7 @@ graph {
   </table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-X2" fillcolor="#FFFFFF" shape=box style=filled]
 	X3 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -115,19 +115,19 @@ graph {
   </table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-X3" fillcolor="#FFFFFF" shape=box style=filled]
 	edge [color="#000000:#ff66cc:#000000"]
-	X1:p1r:e -- W1:w1:w
-	W1:w1:e -- X2:p1l:w
+	X1:p1r:e -- W1:w1:w [class="wv-wire wv-net-W1-w1 wv-net-X1-p1"]
+	W1:w1:e -- X2:p1l:w [class="wv-wire wv-net-W1-w1 wv-net-X2-p1"]
 	edge [color="#000000:#00ffff:#000000"]
-	X1:p2r:e -- W1:w2:w
-	W1:w2:e -- X2:p2l:w
+	X1:p2r:e -- W1:w2:w [class="wv-wire wv-net-W1-w2 wv-net-X1-p2"]
+	W1:w2:e -- X2:p2l:w [class="wv-wire wv-net-W1-w2 wv-net-X2-p2"]
 	edge [color="#000000:#ffff00:#000000"]
-	X1:p3r:e -- W1:w3:w
-	W1:w3:e -- X2:p3l:w
+	X1:p3r:e -- W1:w3:w [class="wv-wire wv-net-W1-w3 wv-net-X1-p3"]
+	W1:w3:e -- X2:p3l:w [class="wv-wire wv-net-W1-w3 wv-net-X2-p3"]
 	edge [color="#000000:#8000ff:#000000"]
-	X1:p4r:e -- W1:w4:w
-	W1:w4:e -- X2:p4l:w
+	X1:p4r:e -- W1:w4:w [class="wv-wire wv-net-W1-w4 wv-net-X1-p4"]
+	W1:w4:e -- X2:p4l:w [class="wv-wire wv-net-W1-w4 wv-net-X2-p4"]
 	W1 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -214,19 +214,19 @@ graph {
   </table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style="filled,dashed"]
+> class="wv-part wv-dsg-W1" fillcolor="#FFFFFF" shape=box style="filled,dashed"]
 	edge [color="#000000:#ff66cc:#000000"]
-	X2:p1r:e -- W2:w1:w
-	W2:w1:e -- X3:p1l:w
+	X2:p1r:e -- W2:w1:w [class="wv-wire wv-net-W2-w1 wv-net-X2-p1"]
+	W2:w1:e -- X3:p1l:w [class="wv-wire wv-net-W2-w1 wv-net-X3-p1"]
 	edge [color="#000000:#00ffff:#000000"]
-	X2:p2r:e -- W2:w2:w
-	W2:w2:e -- X3:p2l:w
+	X2:p2r:e -- W2:w2:w [class="wv-wire wv-net-W2-w2 wv-net-X2-p2"]
+	W2:w2:e -- X3:p2l:w [class="wv-wire wv-net-W2-w2 wv-net-X3-p2"]
 	edge [color="#000000:#ffff00:#000000"]
-	X2:p3r:e -- W2:w3:w
-	W2:w3:e -- X3:p3l:w
+	X2:p3r:e -- W2:w3:w [class="wv-wire wv-net-W2-w3 wv-net-X2-p3"]
+	W2:w3:e -- X3:p3l:w [class="wv-wire wv-net-W2-w3 wv-net-X3-p3"]
 	edge [color="#000000:#8000ff:#000000"]
-	X2:p4r:e -- W2:w4:w
-	W2:w4:e -- X3:p4l:w
+	X2:p4r:e -- W2:w4:w [class="wv-wire wv-net-W2-w4 wv-net-X2-p4"]
+	W2:w4:e -- X3:p4l:w [class="wv-wire wv-net-W2-w4 wv-net-X3-p4"]
 	W2 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -313,5 +313,5 @@ graph {
   </table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style="filled,dashed"]
+> class="wv-part wv-dsg-W2" fillcolor="#FFFFFF" shape=box style="filled,dashed"]
 }

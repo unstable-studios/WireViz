@@ -75,7 +75,7 @@ graph {
   </table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-X1" fillcolor="#FFFFFF" shape=box style=filled]
 	X2 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -239,45 +239,45 @@ graph {
   </table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-X2" fillcolor="#FFFFFF" shape=box style=filled]
 	edge [color="#000000:#895956:#895956:#895956:#000000"]
-	X1:p1r:e -- W1:w2:w
-	W1:w2:e -- X2:p6l:w
+	X1:p1r:e -- W1:w2:w [class="wv-wire wv-net-W1-w2 wv-net-X1-p1"]
+	W1:w2:e -- X2:p6l:w [class="wv-wire wv-net-W1-w2 wv-net-X2-pd4"]
 	edge [color="#000000:#ffffff:#ffffff:#ffffff:#000000"]
-	X1:p2r:e -- W1:w1:w
-	W1:w1:e -- X2:p1l:w
+	X1:p2r:e -- W1:w1:w [class="wv-wire wv-net-W1-w1 wv-net-X1-p14"]
+	W1:w1:e -- X2:p1l:w [class="wv-wire wv-net-W1-w1 wv-net-X2-pz2"]
 	edge [color="#000000:#ffff00:#ffff00:#ffff00:#000000"]
-	X1:p3r:e -- W1:w4:w
-	W1:w4:e -- X2:p15l:w
+	X1:p3r:e -- W1:w4:w [class="wv-wire wv-net-W1-w4 wv-net-X1-p3"]
+	W1:w4:e -- X2:p15l:w [class="wv-wire wv-net-W1-w4 wv-net-X2-pd10"]
 	edge [color="#000000:#00ff00:#00ff00:#00ff00:#000000"]
-	X1:p4r:e -- W1:w3:w
-	W1:w3:e -- X2:p10l:w
+	X1:p4r:e -- W1:w3:w [class="wv-wire wv-net-W1-w3 wv-net-X1-p16"]
+	W1:w3:e -- X2:p10l:w [class="wv-wire wv-net-W1-w3 wv-net-X2-pz8"]
 	edge [color="#000000:#ff66cc:#ff66cc:#ff66cc:#000000"]
-	X1:p5r:e -- W1:w6:w
-	W1:w6:e -- X2:p24l:w
+	X1:p5r:e -- W1:w6:w [class="wv-wire wv-net-W1-w6 wv-net-X1-p5"]
+	W1:w6:e -- X2:p24l:w [class="wv-wire wv-net-W1-w6 wv-net-X2-pd16"]
 	edge [color="#000000:#999999:#999999:#999999:#000000"]
-	X1:p6r:e -- W1:w5:w
-	W1:w5:e -- X2:p19l:w
+	X1:p6r:e -- W1:w5:w [class="wv-wire wv-net-W1-w5 wv-net-X1-p18"]
+	W1:w5:e -- X2:p19l:w [class="wv-wire wv-net-W1-w5 wv-net-X2-pz14"]
 	edge [color="#000000:#ff0000:#ff0000:#ff0000:#000000"]
-	X1:p7r:e -- W1:w8:w
-	W1:w8:e -- X2:p30l:w
+	X1:p7r:e -- W1:w8:w [class="wv-wire wv-net-W1-w8 wv-net-X1-p7"]
+	W1:w8:e -- X2:p30l:w [class="wv-wire wv-net-W1-w8 wv-net-X2-pd20"]
 	edge [color="#000000:#0066ff:#0066ff:#0066ff:#000000"]
-	X1:p8r:e -- W1:w7:w
-	W1:w7:e -- X2:p25l:w
+	X1:p8r:e -- W1:w7:w [class="wv-wire wv-net-W1-w7 wv-net-X1-p20"]
+	W1:w7:e -- X2:p25l:w [class="wv-wire wv-net-W1-w7 wv-net-X2-pz18"]
 	edge [color="#000000:#8000ff:#8000ff:#8000ff:#000000"]
-	X1:p9r:e -- W1:w10:w
-	W1:w10:e -- X2:p39l:w
+	X1:p9r:e -- W1:w10:w [class="wv-wire wv-net-W1-w10 wv-net-X1-p9"]
+	W1:w10:e -- X2:p39l:w [class="wv-wire wv-net-W1-w10 wv-net-X2-pd26"]
 	edge [color="#000000:#000000:#000000:#000000:#000000"]
-	X1:p10r:e -- W1:w9:w
-	W1:w9:e -- X2:p34l:w
+	X1:p10r:e -- W1:w9:w [class="wv-wire wv-net-W1-w9 wv-net-X1-p22"]
+	W1:w9:e -- X2:p34l:w [class="wv-wire wv-net-W1-w9 wv-net-X2-pz24"]
 	edge [color="#000000:#ff0000:#0066ff:#ff0000:#000000"]
-	X1:p11r:e -- W1:w12:w
-	W1:w12:e -- X2:p48l:w
+	X1:p11r:e -- W1:w12:w [class="wv-wire wv-net-W1-w12 wv-net-X1-p11"]
+	W1:w12:e -- X2:p48l:w [class="wv-wire wv-net-W1-w12 wv-net-X2-pd32"]
 	edge [color="#000000:#999999:#ff66cc:#999999:#000000"]
-	X1:p12r:e -- W1:w11:w
-	W1:w11:e -- X2:p43l:w
+	X1:p12r:e -- W1:w11:w [class="wv-wire wv-net-W1-w11 wv-net-X1-p24"]
+	W1:w11:e -- X2:p43l:w [class="wv-wire wv-net-W1-w11 wv-net-X2-pz30"]
 	edge [color="#000000"]
-	X1:p13r:e -- W1:ws:w
+	X1:p13r:e -- W1:ws:w [class="wv-wire wv-net-W1-ws wv-net-X1-p13"]
 	W1 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -523,5 +523,5 @@ graph {
   </table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-W1" fillcolor="#FFFFFF" shape=box style=filled]
 }

@@ -34,7 +34,7 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-X1" fillcolor="#FFFFFF" shape=box style=filled]
 	X2 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -65,13 +65,13 @@ graph {
   </tr></table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-X2" fillcolor="#FFFFFF" shape=box style=filled]
 	edge [color="#000000:#ffff00:#000000"]
-	X1:p5r:e -- C1:w1:w
-	C1:w1:e -- X2:p7l:w
+	X1:p5r:e -- C1:w1:w [class="wv-wire wv-net-C1-w1 wv-net-X1-p5"]
+	C1:w1:e -- X2:p7l:w [class="wv-wire wv-net-C1-w1 wv-net-X2-p7"]
 	edge [color="#000000:#00ff00:#000000"]
-	X1:p6r:e -- C1:w2:w
-	C1:w2:e -- X2:p2l:w
+	X1:p6r:e -- C1:w2:w [class="wv-wire wv-net-C1-w2 wv-net-X1-p6"]
+	C1:w2:e -- X2:p2l:w [class="wv-wire wv-net-C1-w2 wv-net-X2-p2"]
 	C1 [label=<
 <table border="0" cellspacing="0" cellpadding="0">
  <tr><td>
@@ -125,5 +125,5 @@ graph {
   </table>
  </td></tr>
 </table>
-> fillcolor="#FFFFFF" shape=box style=filled]
+> class="wv-part wv-dsg-C1" fillcolor="#FFFFFF" shape=box style=filled]
 }
