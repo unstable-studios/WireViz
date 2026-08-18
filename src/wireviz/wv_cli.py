@@ -11,6 +11,7 @@ if __name__ == "__main__":
 
 import wireviz.wireviz as wv
 from wireviz import APP_NAME, __version__
+from wireviz.wv_errors import WireVizError
 from wireviz.wv_helper import file_read_text
 
 format_codes = {
@@ -65,13 +66,20 @@ epilog += ", ".join([f"{key} ({value.upper()})" for key, value in format_codes.i
     help="File name (without extension) to use for output files, if different from input file name.",
 )
 @click.option(
+    "--strict",
+    is_flag=True,
+    default=False,
+    help="Treat duplicate YAML keys and unreferenced components as errors "
+    "rather than silently dropping them.",
+)
+@click.option(
     "-V",
     "--version",
     is_flag=True,
     default=False,
     help=f"Output {APP_NAME} version and exit.",
 )
-def wireviz(file, format, prepend, output_dir, output_name, version):
+def wireviz(file, format, prepend, output_dir, output_name, strict, version):
     """
     Parses the provided FILE and generates the specified outputs.
     """
@@ -138,13 +146,19 @@ def wireviz(file, format, prepend, output_dir, output_name, version):
         for p in prepend:
             image_paths.add(Path(p).parent)
 
-        wv.parse(
-            yaml_input,
-            output_formats=output_formats,
-            output_dir=_output_dir,
-            output_name=_output_name,
-            image_paths=list(image_paths),
-        )
+        try:
+            wv.parse(
+                yaml_input,
+                output_formats=output_formats,
+                output_dir=_output_dir,
+                output_name=_output_name,
+                image_paths=list(image_paths),
+                strict=strict,
+            )
+        except WireVizError as e:
+            # A clean message, not a traceback: these are input problems, and
+            # under --strict they are the expected way to report them.
+            raise SystemExit(f"Error: {e}")
 
     print()
 
