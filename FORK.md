@@ -66,6 +66,29 @@ Splitting a description across files is equivalent to writing it in one file —
 `tests/test_merge.py` asserts that the generated GraphViz source is identical
 either way.
 
+## `rankdir` — top-to-bottom layout that actually renders
+
+`rankdir` was hardcoded to `LR`, and so were the port compass points every wire
+attaches to (`:e` on one end, `:w` on the other). Setting `rankdir=TB` through
+`tweak` therefore produced a graph where every edge had to loop sideways to
+reach a west-facing port on a node below it — and since wires are drawn as
+**multi-colour parallel edges**, the colour stripes splay apart around that
+loop. Each wire renders as a lens or squashed oval instead of a line.
+
+`options.rankdir` sets both together:
+
+```yaml
+options:
+  rankdir: TB
+```
+
+`LR` (the default) keeps east/west compass points; `TB` uses south/north. `RL`
+and `BT` are rejected rather than silently mis-rendering.
+
+Worth having because `LR` produces extremely wide, short drawings — a real
+harness comes out around 15:1, which does not print. `TB` on the same model
+gives roughly 2:1.
+
 ## Tests
 
 ```sh

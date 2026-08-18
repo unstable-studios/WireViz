@@ -58,8 +58,15 @@ class Options:
     color_mode: ColorMode = "SHORT"
     mini_bom_mode: bool = True
     template_separator: str = "."
+    rankdir: str = "LR"
 
     def __post_init__(self):
+        if self.rankdir not in ("LR", "TB"):
+            raise ValueError(
+                f'rankdir must be "LR" or "TB", not {self.rankdir!r}. '
+                f"RL and BT are not supported: wires are drawn between port "
+                f"compass points, which have to face the way the graph flows."
+            )
         if not self.bgcolor_node:
             self.bgcolor_node = self.bgcolor
         if not self.bgcolor_connector:

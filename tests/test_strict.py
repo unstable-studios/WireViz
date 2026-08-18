@@ -118,3 +118,51 @@ def test_anchor_override_is_not_a_duplicate():
 def test_strict_is_silent_on_a_clean_harness(capsys):
     _parse(ANCHOR_OVERRIDE, strict=True)
     assert "not referenced" not in capsys.readouterr().out
+
+
+# --- rankdir ---------------------------------------------------------------
+
+RANKDIR_HARNESS = """
+connectors:
+  X1: {type: D-Sub, pinlabels: [a]}
+  X2: {type: Molex, pinlabels: [a]}
+cables:
+  W1: {colors: [BK]}
+connections:
+  - - X1: [1]
+    - W1: [1]
+    - X2: [1]
+"""
+
+
+def _graph_source(rankdir=None):
+    yaml_str = RANKDIR_HARNESS
+    if rankdir:
+        yaml_str += f"options:\n  rankdir: {rankdir}\n"
+    return wv.parse(yaml_str, return_types="harness").graph.source
+
+
+def test_rankdir_defaults_to_lr_with_east_west_ports():
+    source = _graph_source()
+    assert "rankdir=LR" in source
+    assert ":e -- " in source
+    assert ":s -- " not in source
+
+
+def test_rankdir_tb_flips_the_port_compass_points():
+    """The compass points must follow the flow direction.
+
+    Wires are multi-colour parallel edges. If the ports still face east/west
+    under a top-to-bottom layout, every edge loops sideways to reach its port
+    and the colour stripes splay apart, rendering each wire as a lens rather
+    than a line.
+    """
+    source = _graph_source("TB")
+    assert "rankdir=TB" in source
+    assert ":s -- " in source
+    assert ":e -- " not in source
+
+
+def test_unsupported_rankdir_is_rejected():
+    with pytest.raises(Exception, match="rankdir"):
+        _graph_source("RL")
