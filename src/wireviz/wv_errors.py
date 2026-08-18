@@ -37,3 +37,27 @@ class DuplicateKeyError(WireVizError):
         super().__init__(message)
         self.key = key
         self.line = line
+
+
+class DuplicateComponentError(WireVizError):
+    """A connector or cable name is defined in more than one source.
+
+    Merging cannot choose between them without discarding one, which is the
+    behaviour merging exists to avoid.
+    """
+
+    def __init__(self, message: str, duplicates: List[tuple]):
+        super().__init__(message)
+        self.duplicates = duplicates
+
+
+class ConflictingValueError(WireVizError):
+    """A setting is given different values in different sources.
+
+    Unlike component definitions these could be resolved by precedence, but
+    silently picking one would make the result depend on argument order.
+    """
+
+    def __init__(self, message: str, conflicts: List[tuple]):
+        super().__init__(message)
+        self.conflicts = conflicts
