@@ -64,7 +64,9 @@ class Options:
     wire_thickness: float = 2
     sort_wires: Optional[str] = None
     shield_style: Optional[str] = None
+    wirelabel_detail: str = "full"
     order: Optional[List[List[Designator]]] = None
+    mate_labels: bool = False
 
     def __post_init__(self):
         if self.order is not None:
@@ -96,6 +98,10 @@ class Options:
             # not (value > 0) also catches NaN, whose comparisons are all False
             if not (value > 0) or value == float("inf"):
                 raise ValueError(f"{attr} must be positive and finite, not {value!r}")
+        if not isinstance(self.mate_labels, bool):
+            raise ValueError(
+                f"mate_labels must be a bool, not {self.mate_labels!r}"
+            )
         if self.sort_wires not in (None, "by_pin"):
             raise ValueError(
                 f'sort_wires must be "by_pin" or unset, not {self.sort_wires!r}'
@@ -103,6 +109,11 @@ class Options:
         if self.shield_style not in (None, "dashed"):
             raise ValueError(
                 f'shield_style must be "dashed" or unset, not {self.shield_style!r}'
+            )
+        if self.wirelabel_detail not in ("full", "pin", "none"):
+            raise ValueError(
+                f'wirelabel_detail must be "full", "pin" or "none", '
+                f"not {self.wirelabel_detail!r}"
             )
         if self.rankdir not in ("LR", "TB"):
             raise ValueError(

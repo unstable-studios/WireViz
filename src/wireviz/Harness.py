@@ -842,12 +842,15 @@ class Harness:
                             f"wv-net-{connection.from_name}-p{connection.from_pin}",
                         ),
                     )
-                    if from_connector.show_name:
+                    if from_connector.show_name and self.options.wirelabel_detail != "none":
                         from_info = [
                             str(connection.from_name),
                             str(connection.from_pin),
                         ]
-                        if from_connector.pinlabels:
+                        if (
+                            from_connector.pinlabels
+                            and self.options.wirelabel_detail == "full"
+                        ):
                             pinlabel = from_connector.pinlabels[from_pin_index]
                             if pinlabel != "":
                                 from_info.append(pinlabel)
@@ -876,9 +879,12 @@ class Harness:
                             f"wv-net-{connection.to_name}-p{connection.to_pin}",
                         ),
                     )
-                    if to_connector.show_name:
+                    if to_connector.show_name and self.options.wirelabel_detail != "none":
                         to_info = [str(connection.to_name), str(connection.to_pin)]
-                        if to_connector.pinlabels:
+                        if (
+                            to_connector.pinlabels
+                            and self.options.wirelabel_detail == "full"
+                        ):
                             pinlabel = to_connector.pinlabels[to_pin_index]
                             if pinlabel != "":
                                 to_info.append(pinlabel)
@@ -936,7 +942,17 @@ class Harness:
             code_to = f"{mate.to_name}{to_port_str}:{in_c}"
 
             dot.attr("edge", color=color, style="dashed", dir=dir)
-            dot.edge(code_from, code_to, **gv_class("wv-mate"))
+            # optional small label naming what the dashed arrow means:
+            # "mate" for bidirectional mating arrows (<--> / <=>), "into"
+            # for directional insertion arrows (--> and its reverse)
+            label_attrs = {}
+            if self.options.mate_labels:
+                label_attrs = {
+                    "label": "mate" if dir in ("both", "none") else "into",
+                    "fontname": self.options.fontname,
+                    "fontsize": "10",
+                }
+            dot.edge(code_from, code_to, **label_attrs, **gv_class("wv-mate"))
 
         # ordering hints: each group becomes a rank=same subgraph whose
         # members are chained with invisible edges, so GraphViz places them
