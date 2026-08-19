@@ -66,7 +66,9 @@ def test_wire_thickness_scales_edges_and_stripes():
 
 
 @pytest.mark.parametrize("attr", ["ranksep", "nodesep", "wire_thickness"])
-@pytest.mark.parametrize("bad", [0, -1, "wide", True])
+@pytest.mark.parametrize(
+    "bad", [0, -1, "wide", True, float("nan"), float("inf"), float("-inf")]
+)
 def test_invalid_values_are_rejected(attr, bad):
     with pytest.raises(ValueError):
         Options(**{attr: bad})

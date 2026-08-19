@@ -68,8 +68,9 @@ class Options:
             value = getattr(self, attr)
             if not isinstance(value, (int, float)) or isinstance(value, bool):
                 raise ValueError(f"{attr} must be a number, not {value!r}")
-            if value <= 0:
-                raise ValueError(f"{attr} must be positive, not {value!r}")
+            # not (value > 0) also catches NaN, whose comparisons are all False
+            if not (value > 0) or value == float("inf"):
+                raise ValueError(f"{attr} must be positive and finite, not {value!r}")
         if self.rankdir not in ("LR", "TB"):
             raise ValueError(
                 f'rankdir must be "LR" or "TB", not {self.rankdir!r}. '
