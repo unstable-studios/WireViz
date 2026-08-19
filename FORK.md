@@ -221,6 +221,34 @@ colored fill and its black borders become dashed).
 
 Off by default; the default generates byte-identical GraphViz source.
 
+## `sheets` — split one harness into printable sheets
+
+A real harness rendered as one drawing is too large to read or print. A
+top-level `sheets:` mapping renders it as one drawing per sheet instead:
+
+```yaml
+sheets:
+  power:  [X1, W1, X2]
+  signal: [W3, X3]
+```
+
+- Only the major components need listing: splices, ferrules and wires are
+  **inferred** by following connections from assigned components. A component
+  whose neighbors sit on different sheets is ambiguous and must be assigned
+  explicitly; a component with no chain to any assigned component cannot be
+  placed. Both are errors — a sheet definition never silently drops or
+  misplaces anything.
+- A connection crossing sheets is drawn on the **cable's** sheet, ending in a
+  stub: a reduced copy of the far connector showing only the referenced pins,
+  typed `⇒ <sheet>` so the reader knows where to continue. Wire labels keep
+  the real designators on every sheet. Mates crossing sheets get stubs too.
+- Graphical outputs split into `<name>.<sheet>.<ext>` per sheet; the **BOM
+  stays one file** for the whole harness — sheets are views for reading, the
+  build list must not fragment.
+- Composes with the other options (`rankdir`, `sort_wires`, `order`, …),
+  which apply per sheet. With `--merge`, define `sheets:` in one input file.
+- HTML output for multi-sheet harnesses is not supported yet.
+
 ## Interactive HTML output
 
 The built-in `simple` HTML template is now interactive; regenerate with
