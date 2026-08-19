@@ -330,6 +330,14 @@ class Harness:
                 attributes = (
                     f'width="{3 * self.options.wire_thickness:g}" bgcolor="{shield_color_hex}" border="2" sides="lr"'
                 )
+                if self.options.shield_style == "dashed":
+                    attributes += ' style="dashed"'
+            elif self.options.shield_style == "dashed":
+                # HTML-like labels cannot dash a filled cell, so the
+                # dashed strip is drawn as dashed left/right cell borders
+                attributes = (
+                    f'width="{self.options.wire_thickness:g}" border="1" sides="lr" style="dashed"'
+                )
             else:
                 # shield is shown as a thin black wire
                 attributes = f'width="{self.options.wire_thickness:g}" bgcolor="#000000" border="0"'
@@ -747,6 +755,14 @@ class Harness:
                     attributes = (
                         f'height="{3 * self.options.wire_thickness:g}" bgcolor="{shield_color_hex}" border="2" sides="tb"'
                     )
+                    if self.options.shield_style == "dashed":
+                        attributes += ' style="dashed"'
+                elif self.options.shield_style == "dashed":
+                    # HTML-like labels cannot dash a filled cell, so the
+                    # dashed strip is drawn as dashed top/bottom cell borders
+                    attributes = (
+                        f'height="{self.options.wire_thickness:g}" border="1" sides="tb" style="dashed"'
+                    )
                 else:
                     # shield is shown as a thin black wire
                     attributes = f'height="{self.options.wire_thickness:g}" bgcolor="#000000" border="0"'
@@ -770,26 +786,33 @@ class Harness:
             for connection in cable.connections:
                 if isinstance(connection.via_port, int):
                     # check if it's an actual wire and not a shield
-                    dot.attr(
-                        "edge",
-                        color=":".join(
+                    edge_attrs = {
+                        "color": ":".join(
                             ["#000000"]
                             + wv_colors.get_color_hex(
                                 cable.colors[connection.via_port - 1], pad=pad
                             )
                             + ["#000000"]
                         ),
-                    )
+                    }
+                    if self.options.shield_style == "dashed":
+                        # edge attributes persist; a preceding shield edge may
+                        # have switched the style to dashed, so switch it back
+                        edge_attrs["style"] = "bold"
+                    dot.attr("edge", **edge_attrs)
                 else:  # it's a shield connection
                     # shield is shown with specified color and black borders, or as a thin black wire otherwise
-                    dot.attr(
-                        "edge",
-                        color=(
+                    edge_attrs = {
+                        "color": (
                             ":".join(["#000000", shield_color_hex, "#000000"])
                             if isinstance(cable.shield, str)
                             else "#000000"
                         ),
-                    )
+                    }
+                    if self.options.shield_style == "dashed":
+                        # keep bold so stripe/pen width matches the wires
+                        edge_attrs["style"] = "dashed,bold"
+                    dot.attr("edge", **edge_attrs)
                 # Net-membership tokens: the two half-edges of a wire share
                 # the cable-side token; edges tapping the same connector pin
                 # share the pin-side token. The HTML template unions them to
