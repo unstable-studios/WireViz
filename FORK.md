@@ -165,6 +165,22 @@ different ranks pulls them into one.
 Unknown designators are an error rather than a silently ignored hint, and an
 unset `order` generates byte-identical GraphViz source.
 
+## `mate_labels` — name the dashed arrows
+
+Mate edges are bare dashed arrows: nothing in the diagram says what they
+mean. With `mate_labels: true` each mate edge gets a small label — `mate`
+for bidirectional mating arrows (`<-->` / `<=>`) and `into` for directional
+insertion arrows (`-->`):
+
+```yaml
+options:
+  mate_labels: true
+```
+
+Labels use the harness font at `fontsize=10` to stay unobtrusive, and apply
+to both pin-level (`MatePin`) and component-level (`MateComponent`) mates.
+Unset, the generated GraphViz source is byte-identical.
+
 ## Interactive HTML output
 
 The built-in `simple` HTML template is now interactive; regenerate with

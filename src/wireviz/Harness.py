@@ -913,7 +913,17 @@ class Harness:
             code_to = f"{mate.to_name}{to_port_str}:{in_c}"
 
             dot.attr("edge", color=color, style="dashed", dir=dir)
-            dot.edge(code_from, code_to, **gv_class("wv-mate"))
+            # optional small label naming what the dashed arrow means:
+            # "mate" for bidirectional mating arrows (<--> / <=>), "into"
+            # for directional insertion arrows (--> and its reverse)
+            label_attrs = {}
+            if self.options.mate_labels:
+                label_attrs = {
+                    "label": "mate" if dir in ("both", "none") else "into",
+                    "fontname": self.options.fontname,
+                    "fontsize": "10",
+                }
+            dot.edge(code_from, code_to, **label_attrs, **gv_class("wv-mate"))
 
         # ordering hints: each group becomes a rank=same subgraph whose
         # members are chained with invisible edges, so GraphViz places them
