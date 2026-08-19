@@ -51,6 +51,7 @@ from wireviz.wv_helper import (
     wrap_text,
 )
 from wireviz.wv_html import generate_html_output
+from wireviz.wv_ortho import orthogonalize
 
 OLD_CONNECTOR_ATTR = {
     "pinout": "was renamed to 'pinlabels' in v0.2",
@@ -314,7 +315,10 @@ class Harness:
             strip.append(f'    <td port="w{i}" cellpadding="0" width="{self.options.wire_thickness * len(bgcolors):g}">')
             strip.append('     <table cellspacing="0" cellborder="0" border="0"><tr>')
             for bgcolor in bgcolors:
-                strip.append(f'      <td width="{stripe_width}" bgcolor="{bgcolor if bgcolor != "" else wv_colors.default_color}" border="0"></td>')
+                # cellpadding="0" so the width is honored exactly: GraphViz's
+                # default padding of 2 inflates each empty stripe cell to 4pt,
+                # doubling the bar relative to the wire edges it must meet
+                strip.append(f'      <td width="{stripe_width}" cellpadding="0" bgcolor="{bgcolor if bgcolor != "" else wv_colors.default_color}" border="0"></td>')
             strip.append("     </tr></table>")
             strip.append("    </td>")
             # fmt: on
@@ -1082,7 +1086,10 @@ class Harness:
     @property
     def svg(self):  # TODO?: Verify xml encoding="utf-8" in SVG?
         graph = self.graph
-        return embed_svg_images(graph.pipe(format="svg").decode("utf-8"), Path.cwd())
+        svg = embed_svg_images(graph.pipe(format="svg").decode("utf-8"), Path.cwd())
+        if self.options.routing == "orthogonal":
+            svg = orthogonalize(svg, self.options.rankdir, self.options.wire_thickness)
+        return svg
 
     def output(
         self,
@@ -1109,6 +1116,16 @@ class Harness:
         # embed images into SVG output
         if "svg" in fmt or "html" in fmt:
             embed_svg_images_file(f"{filename}.tmp.svg")
+            if self.options.routing == "orthogonal":
+                path = Path(f"{filename}.tmp.svg")
+                path.write_text(
+                    orthogonalize(
+                        path.read_text(encoding="utf-8"),
+                        self.options.rankdir,
+                        self.options.wire_thickness,
+                    ),
+                    encoding="utf-8",
+                )
         # GraphViz output
         if "gv" in fmt:
             graph.save(filename=f"{filename}.gv")

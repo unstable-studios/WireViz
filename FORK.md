@@ -224,6 +224,49 @@ so the build list is unaffected.
 
 Off by default; the default generates byte-identical GraphViz source.
 
+## `routing` — schematic-style right-angle wires
+
+GraphViz routes wires as splines, and draws a multi-colour wire as several
+parallel splines whose offsets are computed per control point — on curved
+sweeps the stripes splay apart and pinch at bends, so the wire's width
+visibly varies like a brush stroke. Its own alternatives don't help:
+`splines=ortho` ignores ports entirely, and both `ortho` and `polyline`
+collapse the parallel stripes onto shared endpoints, pinching every wire
+into a lens.
+
+```yaml
+options:
+  routing: orthogonal
+```
+
+redraws every wire in the SVG (and the HTML page, which embeds it) as a
+Manhattan polyline: straight out of the pin, one right-angle turn onto a
+cross-rank channel, straight into the far pin — like a hand-drawn
+schematic. The colour stripes keep their exact port positions and stay
+evenly spaced through the corners, which eliminates the calligraphy
+artifact entirely. Wires sharing a channel are staggered onto separate
+tracks so their straight runs don't overlap. Works under both `rankdir:
+LR` and `TB`.
+
+Scope and limitations:
+
+- It is an SVG post-pass: `svg` and `html` outputs get orthogonal wires;
+  `png` and `gv` keep GraphViz's splines.
+- Pin loops keep their arc (an orthogonal loop on one node face has no
+  sensible shape), and mate arrows keep their dashed curves.
+- The router is deliberately simple (one turn per wire, midpoint channel
+  with staggering). It does not avoid node boxes; with default `ranksep`
+  the channels sit safely between ranks, but extreme stagger fan-out on a
+  very congested channel could reach a node.
+
+Off by default; unset, the SVG is byte-identical to the spline output.
+
+Related fix (always on, `TB` only): the colour bar where a wire passes
+through a cable node was drawn double-width — GraphViz's default cell
+padding of 2 inflates each empty stripe cell to 4pt regardless of its
+`width`. The stripe cells now set `cellpadding="0"`, so the bar is exactly
+`wire_thickness` per stripe and sits flush with the wire edges.
+
 ## `shield_style` — tell shields apart from black wires
 
 An uncoloured shield (`shield: true`) is drawn as a thin plain black line,
