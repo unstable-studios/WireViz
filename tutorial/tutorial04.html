@@ -64,6 +64,14 @@
       opacity: .12;
     }
 
+    #diagram svg path.wv-hit {
+      fill: none;
+      stroke: #000;
+      stroke-opacity: 0;
+      stroke-width: 14px;
+      pointer-events: stroke;
+    }
+
     #wv-hint {
       position: absolute;
       right: 8px;
@@ -559,6 +567,16 @@
   }
 
   wires.forEach(function (el) {
+    // widen the hover target: an invisible fat stroke along the middle of
+    // the wire's parallel colour paths, so the pointer needn't hit a 2pt line
+    var paths = el.querySelectorAll("path");
+    if (paths.length) {
+      var mid = paths[Math.floor(paths.length / 2)];
+      var hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      hit.setAttribute("d", mid.getAttribute("d"));
+      hit.setAttribute("class", "wv-hit");
+      el.appendChild(hit);
+    }
     el.style.cursor = "pointer";
     el.addEventListener("mouseenter", function () {
       netOf(el).forEach(function (member) { member.classList.add("wv-hl"); });
