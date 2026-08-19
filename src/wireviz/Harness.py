@@ -174,6 +174,71 @@ class Harness:
         if to_name in self.connectors:
             self.connectors[to_name].activate_pin(to_pin, Side.LEFT)
 
+    def _wire_display_rows(self, cable: Cable) -> List[Tuple[int, Tuple[Any, Any]]]:
+        """Wire rows of a cable node in display order.
+
+        Each entry is (wire number, (color, wirelabel)). By default rows
+        appear in wire-number order. Under ``sort_wires: by_pin`` they are
+        ordered to match the pin positions the wires connect to, so the
+        edges between connectors and the cable do not cross in the drawing.
+        Connector pins and cable wire rows are fixed HTML-table ports that
+        GraphViz cannot reorder; permuting the display order of the rows is
+        the only way to remove these crossings. Wires without any
+        connection keep wire-number order after the sorted ones.
+        """
+        rows = list(enumerate(zip_longest(cable.colors, cable.wirelabels), 1))
+        if self.options.sort_wires != "by_pin":
+            return rows
+
+        # Barycenter heuristic: each wire's key is the mean of its endpoint
+        # pin positions on both sides. When both sides list pins in the same
+        # non-pin order (connection sets written against pin order), sorting
+        # straightens both sides at once. When only one side mismatches, all
+        # keys tie and the stable sort leaves the rows untouched -- that
+        # single crossing is unavoidable, so it is left where it is.
+        connector_order = {Side.LEFT: [], Side.RIGHT: []}
+
+        def position(side, name, pin):
+            connector = self.connectors.get(name)
+            if connector is None or pin not in connector.pins:
+                return None
+            # Use the pin's *rendered* position: hidden disconnected pins do
+            # not produce a row, so indexing the full pins list would sort
+            # against positions that do not exist in the drawing.
+            pins = connector.pins
+            if connector.hide_disconnected_pins:
+                pins = [p for p in pins if connector.visible_pins.get(p, False)]
+                if pin not in pins:
+                    return None
+            if name not in connector_order[side]:
+                connector_order[side].append(name)
+            # Stack connectors of one side above each other, in
+            # first-connection order, pins within each connector in pin
+            # order, normalized so every connector spans one unit.
+            return connector_order[side].index(name) + pins.index(pin) / len(pins)
+
+        positions = {}  # wire number -> list of endpoint positions
+        for connection in cable.connections:
+            if not isinstance(connection.via_port, int):
+                continue  # shield: rendered separately, below the wire rows
+            for side, name, pin in (
+                (Side.LEFT, connection.from_name, connection.from_pin),
+                (Side.RIGHT, connection.to_name, connection.to_pin),
+            ):
+                if name is None or pin is None:
+                    continue
+                pos = position(side, name, pin)
+                if pos is not None:
+                    positions.setdefault(connection.via_port, []).append(pos)
+
+        def sort_key(row):
+            i, _ = row
+            if i not in positions:
+                return (1, i)  # unconnected wires last, in wire order
+            return (0, sum(positions[i]) / len(positions[i]))
+
+        return sorted(rows, key=sort_key)
+
     @property
     def _compass(self) -> Tuple[str, str]:
         """Port compass points for (outgoing, incoming) edge ends.
@@ -194,9 +259,9 @@ class Harness:
         dot.attr(
             "graph",
             rankdir=self.options.rankdir,
-            ranksep="2",
+            ranksep=f"{self.options.ranksep:g}",
             bgcolor=wv_colors.translate_color(self.options.bgcolor, "HEX"),
-            nodesep="0.33",
+            nodesep=f"{self.options.nodesep:g}",
             fontname=self.options.fontname,
         )  # TODO: Add graph attribute: charset="utf-8",
         dot.attr(
@@ -209,7 +274,13 @@ class Harness:
             fillcolor=wv_colors.translate_color(self.options.bgcolor_node, "HEX"),
             fontname=self.options.fontname,
         )
-        dot.attr("edge", style="bold", fontname=self.options.fontname)
+        # style=bold draws each colour stripe 2pt wide; penwidth overrides the
+        # style width, so it is only emitted for non-default thicknesses to
+        # keep the generated source stable.
+        edge_attr = {"style": "bold", "fontname": self.options.fontname}
+        if self.options.wire_thickness != 2:
+            edge_attr["penwidth"] = f"{self.options.wire_thickness:g}"
+        dot.attr("edge", **edge_attr)
 
         for connector in self.connectors.values():
             # If no wires connected (except maybe loop wires)?
@@ -371,9 +442,7 @@ class Harness:
             wirehtml.append('<table border="0" cellspacing="0" cellborder="0">')
             wirehtml.append("   <tr><td>&nbsp;</td></tr>")
 
-            for i, (connection_color, wirelabel) in enumerate(
-                zip_longest(cable.colors, cable.wirelabels), 1
-            ):
+            for i, (connection_color, wirelabel) in self._wire_display_rows(cable):
                 wirehtml.append("   <tr>")
                 wirehtml.append(f"    <td><!-- {i}_in --></td>")
                 wirehtml.append(f"    <td>")
@@ -396,11 +465,12 @@ class Harness:
 
                 # fmt: off
                 bgcolors = ['#000000'] + get_color_hex(connection_color, pad=pad) + ['#000000']
+                stripe_height = f"{self.options.wire_thickness:g}"
                 wirehtml.append(f"   <tr>")
-                wirehtml.append(f'    <td colspan="3" border="0" cellspacing="0" cellpadding="0" port="w{i}" height="{(2 * len(bgcolors))}">')
+                wirehtml.append(f'    <td colspan="3" border="0" cellspacing="0" cellpadding="0" port="w{i}" height="{self.options.wire_thickness * len(bgcolors):g}">')
                 wirehtml.append('     <table cellspacing="0" cellborder="0" border="0">')
                 for j, bgcolor in enumerate(bgcolors[::-1]):  # Reverse to match the curved wires when more than 2 colors
-                    wirehtml.append(f'      <tr><td colspan="3" cellpadding="0" height="2" bgcolor="{bgcolor if bgcolor != "" else wv_colors.default_color}" border="0"></td></tr>')
+                    wirehtml.append(f'      <tr><td colspan="3" cellpadding="0" height="{stripe_height}" bgcolor="{bgcolor if bgcolor != "" else wv_colors.default_color}" border="0"></td></tr>')
                 wirehtml.append("     </table>")
                 wirehtml.append("    </td>")
                 wirehtml.append("   </tr>")
@@ -460,11 +530,11 @@ class Harness:
                     # shield is shown with specified color and black borders
                     shield_color_hex = wv_colors.get_color_hex(cable.shield)[0]
                     attributes = (
-                        f'height="6" bgcolor="{shield_color_hex}" border="2" sides="tb"'
+                        f'height="{3 * self.options.wire_thickness:g}" bgcolor="{shield_color_hex}" border="2" sides="tb"'
                     )
                 else:
                     # shield is shown as a thin black wire
-                    attributes = f'height="2" bgcolor="#000000" border="0"'
+                    attributes = f'height="{self.options.wire_thickness:g}" bgcolor="#000000" border="0"'
                 # fmt: off
                 wirehtml.append(f'   <tr><td colspan="3" cellpadding="0" {attributes} port="ws"></td></tr>')
                 # fmt: on
