@@ -181,6 +181,26 @@ Labels use the harness font at `fontsize=10` to stay unobtrusive, and apply
 to both pin-level (`MatePin`) and component-level (`MateComponent`) mates.
 Unset, the generated GraphViz source is byte-identical.
 
+## `wirelabel_detail` — slim down in-cable endpoint labels
+
+Every wire row inside a cable node repeats the full endpoint path on both
+sides (`X1:5:GND … X2:1:GND`), duplicating what is already visible at the
+connectors and doubling the node's width on dense cables.
+
+```yaml
+options:
+  wirelabel_detail: pin    # or: full (default), none
+```
+
+- `full` — the current behavior: `designator:pin:pinlabel`.
+- `pin` — keeps `designator:pin` but drops the pinlabel component; the
+  connector's own pinlabel cell still shows it.
+- `none` — empties the endpoint cells entirely; the wire number/colour rows
+  stay.
+
+Applies under both `rankdir: LR` and `TB`. The default (`full`) generates
+byte-identical GraphViz source.
+
 ## Interactive HTML output
 
 The built-in `simple` HTML template is now interactive; regenerate with

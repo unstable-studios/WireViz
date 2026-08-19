@@ -819,12 +819,15 @@ class Harness:
                             f"wv-net-{connection.from_name}-p{connection.from_pin}",
                         ),
                     )
-                    if from_connector.show_name:
+                    if from_connector.show_name and self.options.wirelabel_detail != "none":
                         from_info = [
                             str(connection.from_name),
                             str(connection.from_pin),
                         ]
-                        if from_connector.pinlabels:
+                        if (
+                            from_connector.pinlabels
+                            and self.options.wirelabel_detail == "full"
+                        ):
                             pinlabel = from_connector.pinlabels[from_pin_index]
                             if pinlabel != "":
                                 from_info.append(pinlabel)
@@ -853,9 +856,12 @@ class Harness:
                             f"wv-net-{connection.to_name}-p{connection.to_pin}",
                         ),
                     )
-                    if to_connector.show_name:
+                    if to_connector.show_name and self.options.wirelabel_detail != "none":
                         to_info = [str(connection.to_name), str(connection.to_pin)]
-                        if to_connector.pinlabels:
+                        if (
+                            to_connector.pinlabels
+                            and self.options.wirelabel_detail == "full"
+                        ):
                             pinlabel = to_connector.pinlabels[to_pin_index]
                             if pinlabel != "":
                                 to_info.append(pinlabel)
