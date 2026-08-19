@@ -103,6 +103,23 @@ Finishing `TB` means transposing every connector and cable table so pins sit on
 the top and bottom edges — a rework of the label builder in `wv_gv_html.py`,
 not a flag. Until then `TB` is useful for experimenting and not for output.
 
+## Layout options — `ranksep`, `nodesep`, `wire_thickness`
+
+Three previously hardcoded density knobs are now settable via `options`:
+
+```yaml
+options:
+  ranksep: 1          # inches between ranks; was fixed at 2
+  nodesep: 0.33       # inches between nodes in a rank (the default)
+  wire_thickness: 3   # stripe thickness in points; was fixed at 2
+```
+
+`ranksep` is the cheapest way to narrow a too-wide `LR` drawing. `wire_thickness`
+scales the edge `penwidth` and the colour-stripe rows inside cable nodes
+together, so wires stay flush where they meet the node; useful when pale wires
+disappear at print scale. Defaults generate byte-identical GraphViz source to
+previous versions.
+
 ## `sort_wires` — untangle connection sets written against pin order
 
 Connector pins and cable wire rows are fixed HTML-table ports that GraphViz

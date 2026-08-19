@@ -246,9 +246,9 @@ class Harness:
         dot.attr(
             "graph",
             rankdir=self.options.rankdir,
-            ranksep="2",
+            ranksep=f"{self.options.ranksep:g}",
             bgcolor=wv_colors.translate_color(self.options.bgcolor, "HEX"),
-            nodesep="0.33",
+            nodesep=f"{self.options.nodesep:g}",
             fontname=self.options.fontname,
         )  # TODO: Add graph attribute: charset="utf-8",
         dot.attr(
@@ -261,7 +261,13 @@ class Harness:
             fillcolor=wv_colors.translate_color(self.options.bgcolor_node, "HEX"),
             fontname=self.options.fontname,
         )
-        dot.attr("edge", style="bold", fontname=self.options.fontname)
+        # style=bold draws each colour stripe 2pt wide; penwidth overrides the
+        # style width, so it is only emitted for non-default thicknesses to
+        # keep the generated source stable.
+        edge_attr = {"style": "bold", "fontname": self.options.fontname}
+        if self.options.wire_thickness != 2:
+            edge_attr["penwidth"] = f"{self.options.wire_thickness:g}"
+        dot.attr("edge", **edge_attr)
 
         for connector in self.connectors.values():
             # If no wires connected (except maybe loop wires)?
@@ -440,11 +446,12 @@ class Harness:
 
                 # fmt: off
                 bgcolors = ['#000000'] + get_color_hex(connection_color, pad=pad) + ['#000000']
+                stripe_height = f"{self.options.wire_thickness:g}"
                 wirehtml.append(f"   <tr>")
-                wirehtml.append(f'    <td colspan="3" border="0" cellspacing="0" cellpadding="0" port="w{i}" height="{(2 * len(bgcolors))}">')
+                wirehtml.append(f'    <td colspan="3" border="0" cellspacing="0" cellpadding="0" port="w{i}" height="{self.options.wire_thickness * len(bgcolors):g}">')
                 wirehtml.append('     <table cellspacing="0" cellborder="0" border="0">')
                 for j, bgcolor in enumerate(bgcolors[::-1]):  # Reverse to match the curved wires when more than 2 colors
-                    wirehtml.append(f'      <tr><td colspan="3" cellpadding="0" height="2" bgcolor="{bgcolor if bgcolor != "" else wv_colors.default_color}" border="0"></td></tr>')
+                    wirehtml.append(f'      <tr><td colspan="3" cellpadding="0" height="{stripe_height}" bgcolor="{bgcolor if bgcolor != "" else wv_colors.default_color}" border="0"></td></tr>')
                 wirehtml.append("     </table>")
                 wirehtml.append("    </td>")
                 wirehtml.append("   </tr>")
@@ -504,11 +511,11 @@ class Harness:
                     # shield is shown with specified color and black borders
                     shield_color_hex = wv_colors.get_color_hex(cable.shield)[0]
                     attributes = (
-                        f'height="6" bgcolor="{shield_color_hex}" border="2" sides="tb"'
+                        f'height="{3 * self.options.wire_thickness:g}" bgcolor="{shield_color_hex}" border="2" sides="tb"'
                     )
                 else:
                     # shield is shown as a thin black wire
-                    attributes = f'height="2" bgcolor="#000000" border="0"'
+                    attributes = f'height="{self.options.wire_thickness:g}" bgcolor="#000000" border="0"'
                 # fmt: off
                 wirehtml.append(f'   <tr><td colspan="3" cellpadding="0" {attributes} port="ws"></td></tr>')
                 # fmt: on
