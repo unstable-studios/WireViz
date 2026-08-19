@@ -75,6 +75,15 @@ def test_tb_info_block_sits_beside_the_strip():
     assert '<td valign="middle">' in source
 
 
+def test_tb_unrecognized_pincolors_do_not_emit_an_empty_row():
+    # A pincolors list with no recognized color must not produce an empty
+    # <tr></tr>, which GraphViz's HTML label parser rejects.
+    unrecognized = HARNESS.replace("pincolors: [RD, BK]", 'pincolors: ["", ""]')
+    source = _gv(unrecognized, rankdir="TB")
+    assert "<tr></tr>" not in source
+    assert "<tr><td></td><td></td></tr>" in source
+
+
 def test_tb_edges_attach_north_south():
     source = _gv(HARNESS, rankdir="TB")
     assert ":s -- " in source

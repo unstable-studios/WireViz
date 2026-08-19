@@ -196,7 +196,9 @@ class Harness:
                 for _, _, pinlabel, _ in visible
             )
             strip.append(f"   <tr>{cells}</tr>")
-        if connector.pincolors:
+        if connector.pincolors and any(
+            pincolor in wv_colors._color_hex.keys() for _, _, _, pincolor in visible
+        ):
             text_cells = []
             swatch_cells = []
             for _, _, _, pincolor in visible:
@@ -213,6 +215,11 @@ class Harness:
                     text_cells.append('<td rowspan="2"></td>')
             strip.append(f"   <tr>{''.join(text_cells)}</tr>")
             strip.append(f"   <tr>{''.join(swatch_cells)}</tr>")
+        elif connector.pincolors:
+            # no recognized color: a lone swatch row would be an empty <tr>,
+            # which GraphViz's HTML parser rejects; emit one empty row of
+            # cells instead (the LR equivalent of its empty colspan cells)
+            strip.append(f"   <tr>{'<td></td>' * len(visible)}</tr>")
         if connector.ports_right:
             cells = "".join(
                 f'<td port="p{pinindex+1}r">{pinname}</td>'
