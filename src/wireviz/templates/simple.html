@@ -150,7 +150,7 @@
     if (event.button !== 0) return;
     pan = { x: event.clientX, y: event.clientY, moved: false };
     viewport.classList.add("wv-panning");
-    viewport.setPointerCapture(event.pointerId);
+    try { viewport.setPointerCapture(event.pointerId); } catch (ignored) {}
   });
   viewport.addEventListener("pointermove", function (event) {
     if (!pan) return;
@@ -161,7 +161,10 @@
     apply();
   });
   viewport.addEventListener("pointerup", function (event) {
-    if (pan && !pan.moved) clearPartFocus();
+    // a click (not a drag) on empty space clears the BOM part selection;
+    // clicks on nodes or edges leave it alone
+    var onElement = event.target.closest && event.target.closest("g.node, g.edge");
+    if (pan && !pan.moved && !onElement) clearPartFocus();
     pan = null;
     viewport.classList.remove("wv-panning");
   });
@@ -205,14 +208,19 @@
     tokens.forEach(function (token) { union(tokens[0], token); });
   });
 
+  // net root -> member edges, built once so hover lookups are O(1)
+  var nets = {};
+  wires.forEach(function (el) {
+    var tokens = netTokens(el);
+    if (!tokens.length) return;
+    var root = find(tokens[0]);
+    (nets[root] = nets[root] || []).push(el);
+  });
+
   function netOf(el) {
     var tokens = netTokens(el);
     if (!tokens.length) return [el];
-    var root = find(tokens[0]);
-    return wires.filter(function (other) {
-      var t = netTokens(other);
-      return t.length && find(t[0]) === root;
-    });
+    return nets[find(tokens[0])] || [el];
   }
 
   wires.forEach(function (el) {
