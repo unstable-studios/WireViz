@@ -143,6 +143,28 @@ unavoidable, and is deliberately left where it is rather than moved around.
 
 Off by default; the default generates byte-identical GraphViz source.
 
+## `order` — pin down how nodes stack within a rank
+
+GraphViz freely chooses the stacking order of nodes in a rank, and sometimes
+chooses badly: in demo02 it places W4 below W3, so W4's two wires cross the
+entire W3 bundle on their way to X4. There was no recourse short of raw
+`tweak` GV.
+
+```yaml
+options:
+  order:
+    - [W1, W2, W4, W3]   # top-to-bottom under LR, left-to-right under TB
+```
+
+Each group becomes a `rank=same` subgraph whose members are chained with
+invisible edges, so the listed components share one rank, stacked in the
+given order. A single flat list is accepted as one group. Note the shared
+rank is part of the contract: listing components that would naturally sit in
+different ranks pulls them into one.
+
+Unknown designators are an error rather than a silently ignored hint, and an
+unset `order` generates byte-identical GraphViz source.
+
 ## Interactive HTML output
 
 The built-in `simple` HTML template is now interactive; regenerate with

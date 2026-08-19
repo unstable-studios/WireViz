@@ -915,6 +915,33 @@ class Harness:
             dot.attr("edge", color=color, style="dashed", dir=dir)
             dot.edge(code_from, code_to, **gv_class("wv-mate"))
 
+        # ordering hints: each group becomes a rank=same subgraph whose
+        # members are chained with invisible edges, so GraphViz places them
+        # in one rank stacked in the given order (top-to-bottom under LR,
+        # left-to-right under TB). Loose invisible edges are not enough --
+        # without the shared rank, dot's crossing minimization is free to
+        # ignore them. Unknown names are an error rather than a silently
+        # ignored hint.
+        if self.options.order:
+            known = self.connectors.keys() | self.cables.keys()
+            unknown = [
+                name
+                for group in self.options.order
+                for name in group
+                if name not in known
+            ]
+            if unknown:
+                raise ValueError(
+                    f"options.order references unknown designators: "
+                    f"{', '.join(unknown)}"
+                )
+            for group in self.options.order:
+                with dot.subgraph() as subgraph:
+                    subgraph.attr(rank="same")
+                    subgraph.attr("edge", style="invis")
+                    for above, below in zip(group, group[1:]):
+                        subgraph.edge(above, below)
+
         def typecheck(name: str, value: Any, expect: type) -> None:
             if not isinstance(value, expect):
                 raise Exception(

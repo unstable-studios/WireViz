@@ -63,8 +63,31 @@ class Options:
     nodesep: float = 0.33
     wire_thickness: float = 2
     sort_wires: Optional[str] = None
+    order: Optional[List[List[Designator]]] = None
 
     def __post_init__(self):
+        if self.order is not None:
+            if not isinstance(self.order, list) or not self.order:
+                raise ValueError(
+                    f"order must be a list of designators or a list of such "
+                    f"lists, not {self.order!r}"
+                )
+            if all(isinstance(item, str) for item in self.order):
+                self.order = [self.order]  # accept a single flat group
+            for group in self.order:
+                if (
+                    not isinstance(group, list)
+                    or len(group) < 2
+                    or not all(isinstance(name, str) for name in group)
+                ):
+                    raise ValueError(
+                        f"each order group must list at least two designators, "
+                        f"got {group!r}"
+                    )
+                if len(group) != len(set(group)):
+                    raise ValueError(
+                        f"order group {group!r} lists a designator twice"
+                    )
         for attr in ("ranksep", "nodesep", "wire_thickness"):
             value = getattr(self, attr)
             if not isinstance(value, (int, float)) or isinstance(value, bool):
