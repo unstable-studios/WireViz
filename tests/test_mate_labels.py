@@ -67,10 +67,12 @@ def test_directional_insertion_is_labeled_into():
 
 
 def test_labels_are_small_and_use_the_harness_font():
-    source = _gv(MATED, mate_labels="true")
+    # a non-default fontname proves the labels follow options.fontname
+    # rather than a hard-coded default
+    source = _gv(MATED, mate_labels="true", fontname="courier")
     for edge in _mate_edges(source):
         assert "fontsize=10" in edge
-        assert "fontname=arial" in edge
+        assert "fontname=courier" in edge
 
 
 def test_only_mate_edges_are_labeled():
