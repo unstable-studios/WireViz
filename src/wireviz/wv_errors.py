@@ -51,6 +51,21 @@ class DuplicateComponentError(WireVizError):
         self.duplicates = duplicates
 
 
+class SheetError(WireVizError):
+    """The sheets definition cannot be applied to the harness.
+
+    Raised for structural mistakes (unknown or doubly-assigned designators,
+    malformed definitions) and for components whose sheet cannot be inferred:
+    inference follows connections from explicitly assigned components, so a
+    component is ambiguous when its neighbors sit on different sheets, and
+    unassignable when no chain links it to any assigned component.
+    """
+
+    def __init__(self, message: str, components: List[str] = None):
+        super().__init__(message)
+        self.components = components or []
+
+
 class ConflictingValueError(WireVizError):
     """A setting is given different values in different sources.
 
