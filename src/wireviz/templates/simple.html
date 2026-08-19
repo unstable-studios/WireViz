@@ -27,7 +27,7 @@
       cursor: pointer;
     }
 
-    #diagram {
+    #diagram, .wv-viewport {
       overflow: hidden;
       border: 1px solid #999;
       height: 75vh;
@@ -36,7 +36,25 @@
       touch-action: none;
     }
 
-    #diagram.wv-panning {
+    /* multi-sheet pages: #diagram is a plain wrapper, each sheet has its
+       own .wv-viewport (sheets get a shorter one so two fit a screen) */
+    #diagram.wv-multi {
+      overflow: visible;
+      border: none;
+      height: auto;
+      cursor: default;
+      touch-action: auto;
+    }
+
+    .wv-viewport {
+      height: 45vh;
+    }
+
+    .wv-sheet-title {
+      margin: 1.2em 0 0.3em;
+    }
+
+    #diagram.wv-panning, .wv-viewport.wv-panning {
       cursor: grabbing;
     }
 
@@ -72,7 +90,7 @@
       pointer-events: stroke;
     }
 
-    #wv-hint {
+    .wv-hint {
       position: absolute;
       right: 8px;
       bottom: 8px;
@@ -93,9 +111,14 @@
         color: #ddd;
       }
 
-      #diagram {
+      #diagram, .wv-viewport {
         border-color: #555;
         background-color: #ffffff;
+      }
+
+      #diagram.wv-multi {
+        border: none;
+        background-color: transparent;
       }
 
       #bom table, #bom th, #bom td {
@@ -111,20 +134,20 @@
         background-color: #78560b;
       }
 
-      #wv-hint {
+      .wv-hint {
         color: #bbb;
         background: rgba(32, 32, 32, .8);
       }
     }
 
     @media print {
-      #diagram {
+      #diagram, .wv-viewport {
         height: auto;
         overflow: visible;
         border: none;
       }
 
-      #wv-hint {
+      .wv-hint {
         display: none;
       }
 
@@ -166,88 +189,133 @@
 (function () {
   "use strict";
 
-  var viewport = document.getElementById("diagram");
-  var svg = viewport ? viewport.querySelector("svg") : null;
-  if (!svg) return;
+  var container = document.getElementById("diagram");
+  if (!container) return;
 
-  var hint = document.createElement("div");
-  hint.id = "wv-hint";
-  hint.textContent = "scroll: zoom · drag: pan · double-click: fit · hover a wire: trace its net";
-  viewport.appendChild(hint);
-
-  /* ---------- pan / zoom ---------- */
-
-  var natural = svg.getBoundingClientRect();
-  var naturalWidth = natural.width || 1;
-  var naturalHeight = natural.height || 1;
-  var scale = 1, tx = 0, ty = 0;
-
-  function apply() {
-    svg.style.transform =
-      "translate(" + tx + "px," + ty + "px) scale(" + scale + ")";
+  // Multi-sheet pages wrap each sheet's SVG in its own .wv-viewport;
+  // single-sheet pages put the SVG directly inside #diagram.
+  var viewports = Array.prototype.slice.call(
+    container.querySelectorAll(".wv-viewport")
+  );
+  if (viewports.length) {
+    container.classList.add("wv-multi");
+  } else if (container.querySelector("svg")) {
+    viewports = [container];
+  } else {
+    return;
   }
 
-  function fit() {
-    var vw = viewport.clientWidth, vh = viewport.clientHeight;
-    scale = Math.min(vw / naturalWidth, vh / naturalHeight, 1.5);
-    tx = (vw - naturalWidth * scale) / 2;
-    ty = (vh - naturalHeight * scale) / 2;
-    apply();
+  var clearPartFocus;  // defined in the BOM section, used by viewports
+
+  /* ---------- pan / zoom, one state per viewport ---------- */
+
+  function makeView(viewport, index) {
+    var svg = viewport.querySelector("svg");
+    if (!svg) return null;
+
+    if (index === 0) {
+      var hint = document.createElement("div");
+      hint.className = "wv-hint";
+      hint.textContent = "scroll: zoom · drag: pan · double-click: fit · hover a wire: trace its net";
+      viewport.appendChild(hint);
+    }
+
+    var natural = svg.getBoundingClientRect();
+    var naturalWidth = natural.width || 1;
+    var naturalHeight = natural.height || 1;
+    var scale = 1, tx = 0, ty = 0;
+
+    function apply() {
+      svg.style.transform =
+        "translate(" + tx + "px," + ty + "px) scale(" + scale + ")";
+    }
+
+    function fit() {
+      var vw = viewport.clientWidth, vh = viewport.clientHeight;
+      scale = Math.min(vw / naturalWidth, vh / naturalHeight, 1.5);
+      tx = (vw - naturalWidth * scale) / 2;
+      ty = (vh - naturalHeight * scale) / 2;
+      apply();
+    }
+
+    function centerOn(el) {
+      var rect = el.getBoundingClientRect();
+      var view = viewport.getBoundingClientRect();
+      tx += (view.left + view.width / 2) - (rect.left + rect.width / 2);
+      ty += (view.top + view.height / 2) - (rect.top + rect.height / 2);
+      apply();
+    }
+
+    viewport.addEventListener("wheel", function (event) {
+      event.preventDefault();
+      var rect = viewport.getBoundingClientRect();
+      var mx = event.clientX - rect.left, my = event.clientY - rect.top;
+      var factor = Math.exp(-event.deltaY * 0.0015);
+      var next = Math.min(Math.max(scale * factor, 0.02), 40);
+      factor = next / scale;
+      tx = mx - (mx - tx) * factor;
+      ty = my - (my - ty) * factor;
+      scale = next;
+      apply();
+    }, { passive: false });
+
+    var pan = null;
+    viewport.addEventListener("pointerdown", function (event) {
+      if (event.button !== 0) return;
+      pan = { x: event.clientX, y: event.clientY, moved: false };
+      viewport.classList.add("wv-panning");
+      try { viewport.setPointerCapture(event.pointerId); } catch (ignored) {}
+    });
+    viewport.addEventListener("pointermove", function (event) {
+      if (!pan) return;
+      var dx = event.clientX - pan.x, dy = event.clientY - pan.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) pan.moved = true;
+      tx += dx; ty += dy;
+      pan.x = event.clientX; pan.y = event.clientY;
+      apply();
+    });
+    viewport.addEventListener("pointerup", function (event) {
+      // a click (not a drag) on empty space clears the BOM part selection;
+      // clicks on nodes or edges leave it alone
+      var onElement = event.target.closest && event.target.closest("g.node, g.edge");
+      if (pan && !pan.moved && !onElement) clearPartFocus();
+      pan = null;
+      viewport.classList.remove("wv-panning");
+    });
+    viewport.addEventListener("dblclick", fit);
+    fit();
+
+    return { viewport: viewport, svg: svg, fit: fit, centerOn: centerOn };
   }
 
-  viewport.addEventListener("wheel", function (event) {
-    event.preventDefault();
-    var rect = viewport.getBoundingClientRect();
-    var mx = event.clientX - rect.left, my = event.clientY - rect.top;
-    var factor = Math.exp(-event.deltaY * 0.0015);
-    var next = Math.min(Math.max(scale * factor, 0.02), 40);
-    factor = next / scale;
-    tx = mx - (mx - tx) * factor;
-    ty = my - (my - ty) * factor;
-    scale = next;
-    apply();
-  }, { passive: false });
+  var views = [];
+  viewports.forEach(function (viewport, index) {
+    var view = makeView(viewport, index);
+    if (view) views.push(view);
+  });
+  if (!views.length) return;
+  var svgs = views.map(function (v) { return v.svg; });
 
-  var pan = null;
-  viewport.addEventListener("pointerdown", function (event) {
-    if (event.button !== 0) return;
-    pan = { x: event.clientX, y: event.clientY, moved: false };
-    viewport.classList.add("wv-panning");
-    try { viewport.setPointerCapture(event.pointerId); } catch (ignored) {}
-  });
-  viewport.addEventListener("pointermove", function (event) {
-    if (!pan) return;
-    var dx = event.clientX - pan.x, dy = event.clientY - pan.y;
-    if (Math.abs(dx) + Math.abs(dy) > 3) pan.moved = true;
-    tx += dx; ty += dy;
-    pan.x = event.clientX; pan.y = event.clientY;
-    apply();
-  });
-  viewport.addEventListener("pointerup", function (event) {
-    // a click (not a drag) on empty space clears the BOM part selection;
-    // clicks on nodes or edges leave it alone
-    var onElement = event.target.closest && event.target.closest("g.node, g.edge");
-    if (pan && !pan.moved && !onElement) clearPartFocus();
-    pan = null;
-    viewport.classList.remove("wv-panning");
-  });
-  viewport.addEventListener("dblclick", fit);
-  window.addEventListener("resize", fit);
-  fit();
+  function fitAll() { views.forEach(function (v) { v.fit(); }); }
+  window.addEventListener("resize", fitAll);
 
   /* ---------- printing ----------
      CSS can't unset an inline-style transform, so clear it here and let the
-     diagram flow at natural size; restore the interactive fit afterwards. */
+     diagrams flow at natural size; restore the interactive fit afterwards. */
 
   window.addEventListener("beforeprint", function () {
-    svg.style.transform = "none";
-    svg.style.maxWidth = "100%";
-    svg.style.height = "auto";
+    svgs.forEach(function (svg) {
+      svg.style.transform = "none";
+      svg.style.maxWidth = "100%";
+      svg.style.height = "auto";
+    });
   });
   window.addEventListener("afterprint", function () {
-    svg.style.maxWidth = "";
-    svg.style.height = "";
-    fit();
+    svgs.forEach(function (svg) {
+      svg.style.maxWidth = "";
+      svg.style.height = "";
+    });
+    fitAll();
   });
 
   /* ---------- net tracing ----------
@@ -255,7 +323,9 @@
      Each wire edge carries wv-net-* class tokens emitted by the generator:
      one for its cable wire, one for the connector pin it lands on. Edges
      sharing a token belong to the same electrical net (through splices and
-     daisy-chains), discovered here with a union-find over the tokens.     */
+     daisy-chains), discovered here with a union-find over the tokens. The
+     union spans every sheet: an off-sheet stub keeps the real designator,
+     so hovering a wire also lights its continuation on the other sheets. */
 
   var parent = {};
   function find(token) {
@@ -277,10 +347,12 @@
     });
   }
 
-  var wires = Array.prototype.filter.call(
-    svg.querySelectorAll("g.edge"),
-    function (el) { return el.classList.contains("wv-wire"); }
-  );
+  var wires = [];
+  svgs.forEach(function (svg) {
+    Array.prototype.forEach.call(svg.querySelectorAll("g.edge"), function (el) {
+      if (el.classList.contains("wv-wire")) wires.push(el);
+    });
+  });
   wires.forEach(function (el) {
     var tokens = netTokens(el);
     tokens.forEach(function (token) { union(tokens[0], token); });
@@ -301,6 +373,12 @@
     return nets[find(tokens[0])] || [el];
   }
 
+  function setNetFocus(on) {
+    svgs.forEach(function (svg) {
+      svg.classList.toggle("wv-focus-net", on);
+    });
+  }
+
   wires.forEach(function (el) {
     // widen the hover target: an invisible fat stroke along the middle of
     // the wire's parallel colour paths, so the pointer needn't hit a 2pt line
@@ -315,10 +393,10 @@
     el.style.cursor = "pointer";
     el.addEventListener("mouseenter", function () {
       netOf(el).forEach(function (member) { member.classList.add("wv-hl"); });
-      svg.classList.add("wv-focus-net");
+      setNetFocus(true);
     });
     el.addEventListener("mouseleave", function () {
-      svg.classList.remove("wv-focus-net");
+      setNetFocus(false);
       wires.forEach(function (member) { member.classList.remove("wv-hl"); });
     });
   });
@@ -329,7 +407,12 @@
     return name.replace(/[^A-Za-z0-9_-]/g, "_");
   }
 
-  var nodes = Array.prototype.slice.call(svg.querySelectorAll("g.node"));
+  var nodes = [];
+  svgs.forEach(function (svg) {
+    Array.prototype.forEach.call(svg.querySelectorAll("g.node"), function (n) {
+      nodes.push(n);
+    });
+  });
 
   function nodesFor(designators) {
     var result = [];
@@ -344,20 +427,12 @@
 
   var selectedRow = null;
 
-  function clearPartFocus() {
-    svg.classList.remove("wv-focus-part");
+  clearPartFocus = function () {
+    svgs.forEach(function (svg) { svg.classList.remove("wv-focus-part"); });
     nodes.forEach(function (node) { node.classList.remove("wv-hl"); });
     if (selectedRow) selectedRow.classList.remove("wv-selected");
     selectedRow = null;
-  }
-
-  function centerOn(el) {
-    var rect = el.getBoundingClientRect();
-    var view = viewport.getBoundingClientRect();
-    tx += (view.left + view.width / 2) - (rect.left + rect.width / 2);
-    ty += (view.top + view.height / 2) - (rect.top + rect.height / 2);
-    apply();
-  }
+  };
 
   Array.prototype.forEach.call(
     document.querySelectorAll("#bom tr"),
@@ -373,10 +448,19 @@
         if (wasSelected) return;
         var members = nodesFor(designators);
         members.forEach(function (node) { node.classList.add("wv-hl"); });
-        svg.classList.add("wv-focus-part");
+        svgs.forEach(function (svg) { svg.classList.add("wv-focus-part"); });
         row.classList.add("wv-selected");
         selectedRow = row;
-        centerOn(members[0]);
+        var owner = null;
+        views.forEach(function (v) {
+          if (!owner && v.svg.contains(members[0])) owner = v;
+        });
+        if (owner) {
+          owner.centerOn(members[0]);
+          if (views.length > 1) {
+            owner.viewport.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }
       });
     }
   );

@@ -8,6 +8,8 @@ return-only callers, and sheet numbering metadata is stamped in
 definition order.
 """
 
+import shutil
+
 import pytest
 
 from wireviz import wireviz, wv_sheets
@@ -83,11 +85,29 @@ def test_bom_only_output_renders_no_graphs(tmp_path):
     assert list(tmp_path.glob("t.main.*")) == []
 
 
-def test_html_with_sheets_is_rejected(tmp_path):
-    with pytest.raises(SheetError):
-        wireviz.parse(
-            HARNESS, output_formats=("html",), output_dir=tmp_path, output_name="t"
-        )
+@pytest.mark.skipif(shutil.which("dot") is None, reason="graphviz not installed")
+def test_html_is_one_page_with_a_viewport_per_sheet(tmp_path):
+    wireviz.parse(
+        HARNESS, output_formats=("html",), output_dir=tmp_path, output_name="t"
+    )
+    page = (tmp_path / "t.html").read_text(encoding="utf-8")
+    assert not (tmp_path / "t.main.html").exists()
+    assert page.count('class="wv-viewport"') == 2
+    assert "Sheet 1 of 2: main" in page
+    assert "Sheet 2 of 2: aux" in page
+    # both sheets' SVGs are embedded; the whole-harness BOM sits below
+    assert page.count("<svg") == 2
+    assert "W1" in page and "W3" in page
+
+
+def test_sheet_diagram_html_escapes_names_and_strips_prologs():
+    from wireviz.wv_html import _sheet_diagram_html
+
+    blocks = _sheet_diagram_html(
+        [("a<b", '<?xml version="1.0"?>\n<!DOCTYPE svg>\n<svg/>')]
+    )
+    assert "a&lt;b" in blocks
+    assert "<?xml" not in blocks
 
 
 def test_bad_definition_fails_even_without_outputs():
