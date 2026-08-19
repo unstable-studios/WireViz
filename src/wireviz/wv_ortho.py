@@ -60,8 +60,10 @@ class _Edge:
             if ends:
                 self.paths.append((m.group(1), m.group(2), m.group(3)) + ends)
         # centerline endpoints: the median stripe's own endpoints
-        mid = self.paths[len(self.paths) // 2]
-        self.sx, self.sy, self.ex, self.ey = mid[3:]
+        self.sx = self.sy = self.ex = self.ey = 0.0
+        if self.paths:
+            mid = self.paths[len(self.paths) // 2]
+            self.sx, self.sy, self.ex, self.ey = mid[3:]
 
     @property
     def channel(self) -> float:

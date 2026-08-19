@@ -151,9 +151,22 @@ def test_mates_are_untouched():
 
 
 @needs_dot
-def test_default_svg_is_unchanged():
-    assert _harness(YAML).svg == _harness(YAML).svg
-    assert "C" in list(_wire_paths(_harness(YAML).svg).values())[0][0]
+def test_default_wires_stay_splines():
+    # with routing unset, no post-pass runs: wires keep GraphViz's curves
+    paths = _wire_paths(_harness(YAML).svg)
+    assert paths and all("C" in d for ds in paths.values() for d in ds)
+
+
+def test_edge_without_parsable_paths_is_left_alone():
+    # a wv-wire group whose paths carry no coordinates must not crash the
+    # rewriter (regression: _Edge indexed an empty path list)
+    svg_in = (
+        '<g id="edge1" class="edge wv&#45;wire">'
+        "<title>X1:s&#45;&#45;W1:n</title>"
+        '<path fill="none" stroke="#000000" d="Z"/>'
+        "</g>"
+    )
+    assert orthogonalize(svg_in, "TB", 2) == svg_in
 
 
 def test_gv_source_is_unchanged_by_routing():
