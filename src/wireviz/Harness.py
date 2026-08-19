@@ -189,13 +189,20 @@ class Harness:
             connector = self.connectors.get(name)
             if connector is None or pin not in connector.pins:
                 return None
+            # Use the pin's *rendered* position: hidden disconnected pins do
+            # not produce a row, so indexing the full pins list would sort
+            # against positions that do not exist in the drawing.
+            pins = connector.pins
+            if connector.hide_disconnected_pins:
+                pins = [p for p in pins if connector.visible_pins.get(p, False)]
+                if pin not in pins:
+                    return None
             if name not in connector_order[side]:
                 connector_order[side].append(name)
             # Stack connectors of one side above each other, in
-            # first-connection order, pins within each connector in pin order.
-            return connector_order[side].index(name) * 10000 + connector.pins.index(
-                pin
-            )
+            # first-connection order, pins within each connector in pin
+            # order, normalized so every connector spans one unit.
+            return connector_order[side].index(name) + pins.index(pin) / len(pins)
 
         positions = {}  # wire number -> list of endpoint positions
         for connection in cable.connections:

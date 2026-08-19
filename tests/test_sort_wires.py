@@ -95,6 +95,26 @@ def test_shield_is_unaffected():
     assert source.index('port="ws"') > source.index('port="w1"')
 
 
+def test_hidden_pins_sort_by_rendered_position():
+    # X1 hides its disconnected pins 1-8; only pins 9 and 10 render, as rows
+    # 0 and 1. Both sides list pins against pin order, so sorting must
+    # straighten the rows using the rendered positions, not indices 8 and 9
+    # into the full pins list.
+    hidden = """
+connectors:
+  X1: {pincount: 10, hide_disconnected_pins: true}
+  X2: {pincount: 2}
+cables:
+  W1: {colors: [WH, BN]}
+connections:
+  - - X1: [10, 9]
+    - W1: [1-2]
+    - X2: [2, 1]
+"""
+    source = _gv(hidden, sort_wires="by_pin")
+    assert _wire_row_order(source) == [2, 1]
+
+
 def test_invalid_value_is_rejected():
     with pytest.raises(ValueError):
         Options(sort_wires="alphabetical")
