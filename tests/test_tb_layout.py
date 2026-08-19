@@ -61,7 +61,7 @@ def test_tb_wire_ports_are_vertical_stripes():
     # stripe cell is the port; bands are fixed-width columns with no height,
     # so they stretch to the full strip height
     assert '<td port="w1" cellpadding="0" width="6">' in source
-    assert '<td width="2" bgcolor="#ff0000" border="0"></td>' in source
+    assert '<td width="2" cellpadding="0" bgcolor="#ff0000" border="0"></td>' in source
     assert 'height="2"' not in source
 
 
@@ -87,7 +87,7 @@ def test_tb_unrecognized_pincolors_do_not_emit_an_empty_row():
 def test_tb_respects_wire_thickness():
     source = _gv(HARNESS, rankdir="TB", wire_thickness=3)
     assert '<td port="w1" cellpadding="0" width="9">' in source  # 3 bands of 3
-    assert 'width="3" bgcolor="#ff0000"' in source
+    assert 'width="3" cellpadding="0" bgcolor="#ff0000"' in source
     assert "penwidth=3" in source
 
 
