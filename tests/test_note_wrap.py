@@ -92,9 +92,19 @@ def test_works_under_tb_rankdir_too():
 
 
 def test_links_do_not_count_toward_the_width():
-    # 60 chars of markup around 9 chars of text must wrap as 9 chars
+    # markup is stripped before measuring: the visible text is 18 chars, so
+    # at width 10 it wraps once -- wrapping the raw 81-char string instead
+    # would break the markup across several lines
     note = '<a href="https://example.com/a/very/long/path/to/the/doc">datasheet</a> attached'
+    assert wrap_text(note, 10) == "datasheet\nattached"
+    # and at a width the visible text fits, nothing wraps at all
     assert wrap_text(note, 20) == "datasheet attached"
+
+
+def test_lines_that_fit_pass_through_verbatim():
+    # no whitespace normalization on lines that do not wrap
+    note = "col A    col B\t\tcol C"
+    assert wrap_text(note, 40) == note
 
 
 @pytest.mark.parametrize("bad", [0, -1, 1.5, True, "40"])

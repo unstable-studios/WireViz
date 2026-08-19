@@ -119,12 +119,22 @@ def wrap_text(inp, width):
     """
     if width is None or not isinstance(inp, str):
         return inp
-    return "\n".join(
-        textwrap.fill(
-            line, width=width, break_long_words=False, break_on_hyphens=False
+
+    def wrap_line(line):
+        # lines that fit pass through verbatim; textwrap only touches lines
+        # that actually wrap, and replace_whitespace=False keeps the author's
+        # spacing inside those rather than collapsing runs of spaces
+        if len(line) <= width:
+            return line
+        return textwrap.fill(
+            line,
+            width=width,
+            break_long_words=False,
+            break_on_hyphens=False,
+            replace_whitespace=False,
         )
-        for line in remove_links(inp).split("\n")
-    )
+
+    return "\n".join(wrap_line(line) for line in remove_links(inp).split("\n"))
 
 
 def clean_whitespace(inp):
