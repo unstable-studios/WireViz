@@ -63,6 +63,7 @@ class Options:
     nodesep: float = 0.33
     wire_thickness: float = 2
     sort_wires: Optional[str] = None
+    wirelabel_detail: str = "full"
     order: Optional[List[List[Designator]]] = None
 
     def __post_init__(self):
@@ -98,6 +99,11 @@ class Options:
         if self.sort_wires not in (None, "by_pin"):
             raise ValueError(
                 f'sort_wires must be "by_pin" or unset, not {self.sort_wires!r}'
+            )
+        if self.wirelabel_detail not in ("full", "pin", "none"):
+            raise ValueError(
+                f'wirelabel_detail must be "full", "pin" or "none", '
+                f"not {self.wirelabel_detail!r}"
             )
         if self.rankdir not in ("LR", "TB"):
             raise ValueError(
