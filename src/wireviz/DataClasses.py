@@ -67,6 +67,7 @@ class Options:
     wirelabel_detail: str = "full"
     order: Optional[List[List[Designator]]] = None
     mate_labels: bool = False
+    routing: Optional[str] = None
 
     def __post_init__(self):
         if self.order is not None:
@@ -101,6 +102,10 @@ class Options:
         if not isinstance(self.mate_labels, bool):
             raise ValueError(
                 f"mate_labels must be a bool, not {self.mate_labels!r}"
+            )
+        if self.routing not in (None, "orthogonal"):
+            raise ValueError(
+                f'routing must be "orthogonal" or unset, not {self.routing!r}'
             )
         if self.sort_wires not in (None, "by_pin"):
             raise ValueError(
