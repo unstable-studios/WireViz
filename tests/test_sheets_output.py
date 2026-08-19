@@ -62,6 +62,29 @@ def test_sheet_names_are_sanitized_for_filenames(tmp_path):
     assert (tmp_path / "t.aux_sheet_2.gv").exists()
 
 
+def test_colliding_sanitized_sheet_names_are_an_error(tmp_path):
+    # "aux/1" and "aux 1" both sanitize to "aux_1"; overwriting silently
+    # would lose a sheet, so it must fail instead
+    colliding = HARNESS.replace(
+        "  main: [X1, W1, X2]\n  aux: [W3, X3]",
+        "  aux/1: [X1, W1, X2]\n  aux 1: [W3, X3]",
+    )
+    with pytest.raises(SheetError) as excinfo:
+        wireviz.parse(
+            colliding, output_formats=("gv",), output_dir=tmp_path, output_name="t"
+        )
+    assert "aux_1" in str(excinfo.value)
+
+
+def test_bom_only_output_renders_no_graphs(tmp_path):
+    # tsv alone must not touch GraphViz or emit per-sheet files
+    wireviz.parse(
+        HARNESS, output_formats=("tsv",), output_dir=tmp_path, output_name="t"
+    )
+    assert (tmp_path / "t.bom.tsv").exists()
+    assert list(tmp_path.glob("t.main.*")) == []
+
+
 @pytest.mark.skipif(shutil.which("dot") is None, reason="graphviz not installed")
 def test_html_is_one_page_with_a_viewport_per_sheet(tmp_path):
     wireviz.parse(
