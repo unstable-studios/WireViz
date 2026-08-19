@@ -65,6 +65,19 @@ def check_old(node: str, old_attr: dict, args: dict) -> None:
             raise ValueError(f"'{attr}' in {node}: '{attr}' {descr}")
 
 
+def gv_class(*tokens: Any) -> dict:
+    """A GraphViz `class` attribute passed through to SVG output.
+
+    GraphViz appends it to the default `node`/`edge` class of the SVG group,
+    where the HTML template's interactivity script (net highlighting, BOM
+    linkage) picks it up. Tokens are sanitized to valid CSS class names.
+    The attribute is inert in every other output format.
+    """
+    return {
+        "class": " ".join(re.sub(r"[^A-Za-z0-9_-]", "_", str(t)) for t in tokens)
+    }
+
+
 @dataclass
 class Harness:
     metadata: Metadata
@@ -351,6 +364,7 @@ class Harness:
                 shape="box",
                 style="filled",
                 fillcolor=translate_color(self.options.bgcolor_connector, "HEX"),
+                **gv_class("wv-part", f"wv-dsg-{connector.name}"),
             )
 
             if len(connector.loops) > 0:
@@ -368,6 +382,11 @@ class Harness:
                         f"{connector.name}:p{loop[0]}{loop_side}:{loop_dir}",
                         f"{connector.name}:p{loop[1]}{loop_side}:{loop_dir}",
                         label=" ",  # Work-around to avoid over-sized loops.
+                        **gv_class(
+                            "wv-wire",
+                            f"wv-net-{connector.name}-p{loop[0]}",
+                            f"wv-net-{connector.name}-p{loop[1]}",
+                        ),
                     )
 
         # determine if there are double- or triple-colored wires in the harness;
@@ -551,6 +570,15 @@ class Harness:
                             else "#000000"
                         ),
                     )
+                # Net-membership tokens: the two half-edges of a wire share
+                # the cable-side token; edges tapping the same connector pin
+                # share the pin-side token. The HTML template unions them to
+                # highlight whole nets across splices and daisy-chains.
+                wire_token = (
+                    f"wv-net-{cable.name}-w{connection.via_port}"
+                    if isinstance(connection.via_port, int)
+                    else f"wv-net-{cable.name}-ws"
+                )
                 if connection.from_pin is not None:  # connect to left
                     from_connector = self.connectors[connection.from_name]
                     from_pin_index = from_connector.pins.index(connection.from_pin)
@@ -562,7 +590,15 @@ class Harness:
                     out_c, in_c = self._compass
                     code_left_1 = f"{connection.from_name}{from_port_str}:{out_c}"
                     code_left_2 = f"{cable.name}:w{connection.via_port}:{in_c}"
-                    dot.edge(code_left_1, code_left_2)
+                    dot.edge(
+                        code_left_1,
+                        code_left_2,
+                        **gv_class(
+                            "wv-wire",
+                            wire_token,
+                            f"wv-net-{connection.from_name}-p{connection.from_pin}",
+                        ),
+                    )
                     if from_connector.show_name:
                         from_info = [
                             str(connection.from_name),
@@ -588,7 +624,15 @@ class Harness:
                     out_c, in_c = self._compass
                     code_right_1 = f"{cable.name}:w{connection.via_port}:{out_c}"
                     code_right_2 = f"{connection.to_name}{to_port_str}:{in_c}"
-                    dot.edge(code_right_1, code_right_2)
+                    dot.edge(
+                        code_right_1,
+                        code_right_2,
+                        **gv_class(
+                            "wv-wire",
+                            wire_token,
+                            f"wv-net-{connection.to_name}-p{connection.to_pin}",
+                        ),
+                    )
                     if to_connector.show_name:
                         to_info = [str(connection.to_name), str(connection.to_pin)]
                         if to_connector.pinlabels:
@@ -615,6 +659,7 @@ class Harness:
                 shape="box",
                 style=style,
                 fillcolor=translate_color(bgcolor, "HEX"),
+                **gv_class("wv-part", f"wv-dsg-{cable.name}"),
             )
 
         # mates
@@ -648,7 +693,7 @@ class Harness:
             code_to = f"{mate.to_name}{to_port_str}:{in_c}"
 
             dot.attr("edge", color=color, style="dashed", dir=dir)
-            dot.edge(code_from, code_to)
+            dot.edge(code_from, code_to, **gv_class("wv-mate"))
 
         def typecheck(name: str, value: Any, expect: type) -> None:
             if not isinstance(value, expect):
