@@ -69,6 +69,14 @@ def test_unknown_designator_is_an_error():
     assert "W9" in str(excinfo.value)
 
 
+def test_unknown_designators_are_reported_once_each():
+    # the same typo in several groups must not repeat in the message
+    with pytest.raises(ValueError) as excinfo:
+        _gv(HARNESS, order="[[W1, W9], [X2, W9], [W8, W9]]")
+    assert str(excinfo.value).count("W9") == 1
+    assert "W8" in str(excinfo.value)
+
+
 def test_hints_do_not_affect_wires_or_nets():
     plain = _gv(HARNESS)
     hinted = _gv(HARNESS, order="[[W1, W2]]")

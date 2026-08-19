@@ -924,12 +924,14 @@ class Harness:
         # ignored hint.
         if self.options.order:
             known = self.connectors.keys() | self.cables.keys()
-            unknown = [
-                name
-                for group in self.options.order
-                for name in group
-                if name not in known
-            ]
+            unknown = list(
+                dict.fromkeys(  # dedupe, preserving first-mention order
+                    name
+                    for group in self.options.order
+                    for name in group
+                    if name not in known
+                )
+            )
             if unknown:
                 raise ValueError(
                     f"options.order references unknown designators: "
