@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+import textwrap
 from pathlib import Path
 from typing import Dict, List
 
@@ -106,6 +107,34 @@ def remove_links(inp):
         if isinstance(inp, str)
         else inp
     )
+
+
+def wrap_text(inp, width):
+    """Wrap each line of `inp` at `width` columns; author line breaks stay.
+
+    Links are stripped before measuring, so invisible markup does not count
+    toward the column limit. Long unbreakable tokens (part numbers, URLs)
+    are left intact rather than split mid-token. A `width` of None or a
+    non-string input passes through unchanged.
+    """
+    if width is None or not isinstance(inp, str):
+        return inp
+
+    def wrap_line(line):
+        # lines that fit pass through verbatim; textwrap only touches lines
+        # that actually wrap, and replace_whitespace=False keeps the author's
+        # spacing inside those rather than collapsing runs of spaces
+        if len(line) <= width:
+            return line
+        return textwrap.fill(
+            line,
+            width=width,
+            break_long_words=False,
+            break_on_hyphens=False,
+            replace_whitespace=False,
+        )
+
+    return "\n".join(wrap_line(line) for line in remove_links(inp).split("\n"))
 
 
 def clean_whitespace(inp):

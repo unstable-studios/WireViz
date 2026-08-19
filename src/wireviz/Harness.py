@@ -48,6 +48,7 @@ from wireviz.wv_helper import (
     is_arrow,
     mm2_equiv,
     tuplelist2tsv,
+    wrap_text,
 )
 from wireviz.wv_html import generate_html_output
 from wireviz.wv_ortho import orthogonalize
@@ -506,7 +507,9 @@ class Harness:
             # fmt: on
 
             rows.extend(get_additional_component_table(self, connector))
-            rows.append([html_line_breaks(connector.notes)])
+            rows.append(
+                [html_line_breaks(wrap_text(connector.notes, self.options.note_wrap))]
+            )
             if tb and connector.style != "simple":
                 html.extend(
                     self._tb_wrapper(
@@ -652,7 +655,9 @@ class Harness:
             # fmt: on
 
             rows.extend(get_additional_component_table(self, cable))
-            rows.append([html_line_breaks(cable.notes)])
+            rows.append(
+                [html_line_breaks(wrap_text(cable.notes, self.options.note_wrap))]
+            )
             if tb:
                 html.extend(
                     self._tb_wrapper(
