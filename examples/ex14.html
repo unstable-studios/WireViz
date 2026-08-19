@@ -84,6 +84,59 @@
       pointer-events: none;
     }
 
+    /* The SVG interior follows the YAML bgcolor option, so only the page
+       chrome is themed here; #diagram keeps a light background so the
+       fixed-light diagram stays readable on the dark page. */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #1a1a1a !important;
+        color: #ddd;
+      }
+
+      #diagram {
+        border-color: #555;
+        background-color: #ffffff;
+      }
+
+      #bom table, #bom th, #bom td {
+        border-color: #555;
+      }
+
+      #bom table {
+        background-color: #242424;
+        color: #ddd;
+      }
+
+      #bom tr.wv-selected td {
+        background-color: #78560b;
+      }
+
+      #wv-hint {
+        color: #bbb;
+        background: rgba(32, 32, 32, .8);
+      }
+    }
+
+    @media print {
+      #diagram {
+        height: auto;
+        overflow: visible;
+        border: none;
+      }
+
+      #wv-hint {
+        display: none;
+      }
+
+      #bom {
+        break-before: page;
+      }
+
+      tr {
+        break-inside: avoid;
+      }
+    }
+
   </style>
 </head><body style="font-family:arial;background-color:#ffffff">
 <h1>ex14</h1>
@@ -911,6 +964,21 @@
   viewport.addEventListener("dblclick", fit);
   window.addEventListener("resize", fit);
   fit();
+
+  /* ---------- printing ----------
+     CSS can't unset an inline-style transform, so clear it here and let the
+     diagram flow at natural size; restore the interactive fit afterwards. */
+
+  window.addEventListener("beforeprint", function () {
+    svg.style.transform = "none";
+    svg.style.maxWidth = "100%";
+    svg.style.height = "auto";
+  });
+  window.addEventListener("afterprint", function () {
+    svg.style.maxWidth = "";
+    svg.style.height = "";
+    fit();
+  });
 
   /* ---------- net tracing ----------
 
