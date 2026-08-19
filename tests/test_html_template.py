@@ -14,10 +14,10 @@ SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>'
 
 def _render(tmp_path):
     base = tmp_path / "t"
-    (tmp_path / "t.tmp.svg").write_text(SVG)
+    (tmp_path / "t.tmp.svg").write_text(SVG, encoding="utf-8")
     bom_list = [["Id", "Description", "Qty"], ["1", "Wire", "2"]]
     generate_html_output(base, bom_list, Metadata(), Options())
-    return (tmp_path / "t.html").read_text()
+    return (tmp_path / "t.html").read_text(encoding="utf-8")
 
 
 def test_output_contains_print_stylesheet(tmp_path):

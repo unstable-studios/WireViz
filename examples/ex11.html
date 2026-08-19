@@ -129,10 +129,12 @@
       }
 
       #bom {
+        page-break-before: always;  /* legacy fallback */
         break-before: page;
       }
 
-      tr {
+      #bom tr {
+        page-break-inside: avoid;  /* legacy fallback */
         break-inside: avoid;
       }
     }
