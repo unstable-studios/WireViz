@@ -105,6 +105,64 @@ connector may be drawn on the node's far side.
 `LR` output is byte-identical to previous versions (asserted in
 `tests/test_tb_layout.py`).
 
+## Layout options — `ranksep`, `nodesep`, `wire_thickness`
+
+Three previously hardcoded density knobs are now settable via `options`:
+
+```yaml
+options:
+  ranksep: 1          # inches between ranks; was fixed at 2
+  nodesep: 0.33       # inches between nodes in a rank (the default)
+  wire_thickness: 3   # stripe thickness in points; was fixed at 2
+```
+
+`ranksep` is the cheapest way to narrow a too-wide `LR` drawing. `wire_thickness`
+scales the edge `penwidth` and the colour-stripe rows inside cable nodes
+together, so wires stay flush where they meet the node; useful when pale wires
+disappear at print scale. Defaults generate byte-identical GraphViz source to
+previous versions.
+
+## `sort_wires` — untangle connection sets written against pin order
+
+Connector pins and cable wire rows are fixed HTML-table ports that GraphViz
+cannot reorder, so when a connection set lists pins in a different order than
+the wires (`X1: [4-1]` feeding `W1: [1-4]`), the mismatch is drawn as a
+crossing knot pinched between the nodes.
+
+```yaml
+options:
+  sort_wires: by_pin
+```
+
+reorders the **displayed** wire rows in each cable by the barycenter of their
+endpoint pin positions. Wire numbers, colors and the BOM are untouched; only
+the vertical position of each row changes. When both ends of a cable list
+pins against pin order, sorting straightens both sides at once. A mismatch on
+only one side (the wires genuinely reverse between the two connectors) is
+unavoidable, and is deliberately left where it is rather than moved around.
+
+Off by default; the default generates byte-identical GraphViz source.
+
+## Interactive HTML output
+
+The built-in `simple` HTML template is now interactive; regenerate with
+`-f h` and open the `.html` in a browser:
+
+- **Fit, pan and zoom** — the diagram opens fitted to the window; scroll to
+  zoom at the cursor, drag to pan, double-click to re-fit. Wide harnesses no
+  longer force horizontal page scrolling.
+- **Net tracing** — hover any wire to highlight its entire electrical net,
+  through splices and daisy-chained cables, while everything else dims.
+- **BOM linkage** — click a BOM row to highlight and center its component(s)
+  in the diagram; click again, click empty space, or press Escape to clear.
+
+This works because the generator now emits `class` attributes on every node
+(`wv-part wv-dsg-<designator>`) and wire edge (`wv-wire` plus `wv-net-…`
+tokens naming the cable wire and connector pin it lands on). GraphViz passes
+them through to SVG, where the template's script unions the tokens into nets.
+The attributes are inert in PNG/SVG-only output and available to any
+downstream tooling. Custom templates (e.g. `din-6771`) are unchanged.
+
 ## Tests
 
 ```sh

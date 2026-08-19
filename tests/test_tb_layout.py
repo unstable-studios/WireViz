@@ -84,6 +84,24 @@ def test_tb_unrecognized_pincolors_do_not_emit_an_empty_row():
     assert "<tr><td></td><td></td></tr>" in source
 
 
+def test_tb_respects_wire_thickness():
+    source = _gv(HARNESS, rankdir="TB", wire_thickness=3)
+    assert '<td port="w1" cellpadding="0" width="9">' in source  # 3 bands of 3
+    assert 'width="3" bgcolor="#ff0000"' in source
+    assert "penwidth=3" in source
+
+
+def test_tb_respects_sort_wires():
+    import re
+
+    reversed_both = HARNESS.replace("X1: [1-2]", "X1: [2, 1]").replace(
+        "X2: [1-2]", "X2: [2, 1]"
+    )
+    source = _gv(reversed_both, rankdir="TB", sort_wires="by_pin")
+    wire_columns = [int(n) for n in re.findall(r'port="w(\d+)"', source)]
+    assert wire_columns == [2, 1]
+
+
 def test_tb_edges_attach_north_south():
     source = _gv(HARNESS, rankdir="TB")
     assert ":s -- " in source
