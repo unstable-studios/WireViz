@@ -63,6 +63,7 @@ class Options:
     nodesep: float = 0.33
     wire_thickness: float = 2
     sort_wires: Optional[str] = None
+    shield_style: Optional[str] = None
     wirelabel_detail: str = "full"
     order: Optional[List[List[Designator]]] = None
     mate_labels: bool = False
@@ -104,6 +105,10 @@ class Options:
         if self.sort_wires not in (None, "by_pin"):
             raise ValueError(
                 f'sort_wires must be "by_pin" or unset, not {self.sort_wires!r}'
+            )
+        if self.shield_style not in (None, "dashed"):
+            raise ValueError(
+                f'shield_style must be "dashed" or unset, not {self.shield_style!r}'
             )
         if self.wirelabel_detail not in ("full", "pin", "none"):
             raise ValueError(

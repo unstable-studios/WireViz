@@ -201,6 +201,26 @@ options:
 Applies under both `rankdir: LR` and `TB`. The default (`full`) generates
 byte-identical GraphViz source.
 
+## `shield_style` — tell shields apart from black wires
+
+An uncoloured shield (`shield: true`) is drawn as a thin plain black line,
+visually identical to a black (BK) wire, both in the cable node and on the
+edges.
+
+```yaml
+options:
+  shield_style: dashed
+```
+
+draws shield edges dashed while keeping their colors: thin black for bool
+shields, the black/color/black sandwich for named-color shields. Inside the
+cable node the shield strip gets dashed cell borders (HTML-like labels
+cannot dash a filled cell, so the bool shield's solid black fill is replaced
+by dashed borders on the wire-facing sides; a named-color shield keeps its
+colored fill and its black borders become dashed).
+
+Off by default; the default generates byte-identical GraphViz source.
+
 ## Interactive HTML output
 
 The built-in `simple` HTML template is now interactive; regenerate with
