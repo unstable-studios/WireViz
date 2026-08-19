@@ -167,16 +167,20 @@ def _stub(original: Connector, pins: List, sheet: str) -> Connector:
     )
 
 
-def split(harness: Harness, sheets: dict) -> "Dict[str, Harness]":
+def split(
+    harness: Harness, sheets: dict, assignment: Optional[Dict[str, str]] = None
+) -> "Dict[str, Harness]":
     """One sub-harness per sheet, in definition order.
 
     Components keep their identity and order; a connection whose far
     connector lives on another sheet is drawn against a stub carrying the
     same designator, so wire labels read identically on every sheet. A
     harness split onto a single sheet reproduces the original graph
-    byte-identically.
+    byte-identically. A caller that already ran :func:`assign` can pass its
+    result to skip re-running the inference.
     """
-    assignment = assign(harness, sheets)
+    if assignment is None:
+        assignment = assign(harness, sheets)
     result = {}
 
     for sheet in sheets:
@@ -271,13 +275,15 @@ def split(harness: Harness, sheets: dict) -> "Dict[str, Harness]":
     return result
 
 
-def prepare(harness: Harness, sheets: dict) -> "Dict[str, Harness]":
+def prepare(
+    harness: Harness, sheets: dict, assignment: Optional[Dict[str, str]] = None
+) -> "Dict[str, Harness]":
     """Split and stamp each sub-harness with its sheet metadata.
 
     ``sheet_name``, ``sheet_current`` (1-based, in definition order) and
     ``sheet_total`` feed the HTML template's sheet placeholders.
     """
-    result = split(harness, sheets)
+    result = split(harness, sheets, assignment)
     for index, (name, sub) in enumerate(result.items(), 1):
         sub.metadata["sheet_name"] = name
         sub.metadata["sheet_current"] = index
@@ -285,7 +291,33 @@ def prepare(harness: Harness, sheets: dict) -> "Dict[str, Harness]":
     return result
 
 
-def output(harness: Harness, sheets: dict, filename, fmt: tuple) -> None:
+# formats drawn per sheet; the BOM (tsv) stays whole-harness, and formats
+# WireViz does not implement (csv, pdf) are not silently rendered per sheet
+GRAPHICAL_FORMATS = ("gv", "png", "svg")
+
+
+def _safe_filenames(names) -> Dict[str, str]:
+    """Sheet name -> filesystem-safe fragment; collisions are an error."""
+    safe = {name: re.sub(r"[^\w.-]", "_", name) for name in names}
+    taken = {}
+    for name, fragment in safe.items():
+        if fragment in taken:
+            raise SheetError(
+                f"sheet names {taken[fragment]!r} and {name!r} both map to "
+                f"filename fragment {fragment!r}; rename one of them",
+                components=[taken[fragment], name],
+            )
+        taken[fragment] = name
+    return safe
+
+
+def output(
+    harness: Harness,
+    sheets: dict,
+    filename,
+    fmt: tuple,
+    assignment: Optional[Dict[str, str]] = None,
+) -> None:
     """Write per-sheet graphical files plus the whole-harness BOM.
 
     Graphical formats go to ``<filename>.<sheet>.<ext>`` per sheet; the BOM
@@ -298,10 +330,10 @@ def output(harness: Harness, sheets: dict, filename, fmt: tuple) -> None:
             "HTML output for a multi-sheet harness is not supported yet; "
             "generate gv/png/svg/tsv instead"
         )
-    per_sheet_formats = tuple(f for f in fmt if f != "tsv")
-    for name, sub in prepare(harness, sheets).items():
-        if per_sheet_formats:
-            safe = re.sub(r"[^\w.-]", "_", name)
-            sub.output(filename=f"{filename}.{safe}", fmt=per_sheet_formats)
+    per_sheet_formats = tuple(f for f in fmt if f in GRAPHICAL_FORMATS)
+    if per_sheet_formats:
+        safe = _safe_filenames(sheets)
+        for name, sub in prepare(harness, sheets, assignment).items():
+            sub.output(filename=f"{filename}.{safe[name]}", fmt=per_sheet_formats)
     if "tsv" in fmt:
         file_write_text(f"{filename}.bom.tsv", tuplelist2tsv(bom_list(harness.bom())))

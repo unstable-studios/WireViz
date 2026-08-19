@@ -389,15 +389,20 @@ def parse(
             harness.add_bom_item(line)
 
     sheets_definition = yaml_data.get("sheets")
+    sheet_assignment = None
     if sheets_definition is not None:
         # fail fast for return-only callers too: a bad sheets definition is
         # an input error regardless of which outputs were requested
-        wv_sheets.assign(harness, sheets_definition)
+        sheet_assignment = wv_sheets.assign(harness, sheets_definition)
 
     if output_formats:
         if sheets_definition is not None:
             wv_sheets.output(
-                harness, sheets_definition, output_file, output_formats
+                harness,
+                sheets_definition,
+                output_file,
+                output_formats,
+                assignment=sheet_assignment,
             )
         else:
             harness.output(filename=output_file, fmt=output_formats, view=False)
