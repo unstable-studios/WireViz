@@ -33,6 +33,7 @@ from wireviz.Harness import Harness
 from wireviz.wv_bom import bom_list
 from wireviz.wv_errors import SheetError
 from wireviz.wv_helper import file_write_text, tuplelist2tsv
+from wireviz.wv_html import generate_html_output
 
 STUB_TYPE_PREFIX = "⇒ "  # ⇒ <sheet name>
 
@@ -284,18 +285,22 @@ def output(harness: Harness, sheets: dict, filename, fmt: tuple) -> None:
 
     Graphical formats go to ``<filename>.<sheet>.<ext>`` per sheet; the BOM
     stays one file for the whole harness -- sheets are views for reading,
-    the build list must not fragment. HTML is rejected until the template
-    can carry multiple sheets.
+    the build list must not fragment. HTML is one page carrying every sheet
+    in its own interactive viewport, with the whole-harness BOM below.
     """
-    if "html" in fmt:
-        raise SheetError(
-            "HTML output for a multi-sheet harness is not supported yet; "
-            "generate gv/png/svg/tsv instead"
-        )
-    per_sheet_formats = tuple(f for f in fmt if f != "tsv")
-    for name, sub in prepare(harness, sheets).items():
+    per_sheet_formats = tuple(f for f in fmt if f not in ("tsv", "html"))
+    subs = prepare(harness, sheets)
+    for name, sub in subs.items():
         if per_sheet_formats:
             safe = re.sub(r"[^\w.-]", "_", name)
             sub.output(filename=f"{filename}.{safe}", fmt=per_sheet_formats)
+    if "html" in fmt:
+        generate_html_output(
+            filename,
+            bom_list(harness.bom()),
+            harness.metadata,
+            harness.options,
+            sheet_diagrams=[(name, sub.svg) for name, sub in subs.items()],
+        )
     if "tsv" in fmt:
         file_write_text(f"{filename}.bom.tsv", tuplelist2tsv(bom_list(harness.bom())))

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import re
+from html import escape as html_escape
 from pathlib import Path
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from wireviz import APP_NAME, APP_URL, __version__, wv_colors
 from wireviz.DataClasses import Metadata, Options
@@ -16,11 +17,34 @@ from wireviz.wv_helper import (
 )
 
 
+def _strip_svg_prolog(svg: str) -> str:
+    return re.sub(  # TODO?: Verify xml encoding="utf-8" in SVG?
+        "^<[?]xml [^?>]*[?]>[^<]*<!DOCTYPE [^>]*>",
+        "<!-- XML and DOCTYPE declarations from SVG file removed -->",
+        svg,
+        1,
+    )
+
+
+def _sheet_diagram_html(sheet_diagrams: List[Tuple[str, str]]) -> str:
+    """One titled viewport per sheet; the template's script wires them up."""
+    total = len(sheet_diagrams)
+    blocks = []
+    for index, (name, svg) in enumerate(sheet_diagrams, 1):
+        blocks.append(
+            f'<h3 class="wv-sheet-title">Sheet {index} of {total}: '
+            f"{html_escape(name)}</h3>\n"
+            f'<div class="wv-viewport">\n{_strip_svg_prolog(svg)}\n</div>'
+        )
+    return "\n".join(blocks)
+
+
 def generate_html_output(
     filename: Union[str, Path],
     bom_list: List[List[str]],
     metadata: Metadata,
     options: Options,
+    sheet_diagrams: "Optional[List[Tuple[str, str]]]" = None,
 ):
     # load HTML template
     templatename = metadata.get("template", {}).get("name")
@@ -38,12 +62,9 @@ def generate_html_output(
 
     # embed SVG diagram (only if used)
     def svgdata() -> str:
-        return re.sub(  # TODO?: Verify xml encoding="utf-8" in SVG?
-            "^<[?]xml [^?>]*[?]>[^<]*<!DOCTYPE [^>]*>",
-            "<!-- XML and DOCTYPE declarations from SVG file removed -->",
-            file_read_text(f"{filename}.tmp.svg"),
-            1,
-        )
+        if sheet_diagrams:
+            return _sheet_diagram_html(sheet_diagrams)
+        return _strip_svg_prolog(file_read_text(f"{filename}.tmp.svg"))
 
     # generate BOM table
     bom = flatten2d(bom_list)
@@ -84,8 +105,9 @@ def generate_html_output(
         "<!-- %filename_stem% -->": Path(filename).stem,
         "<!-- %bom% -->": bom_html,
         "<!-- %bom_reversed% -->": bom_html_reversed,
-        "<!-- %sheet_current% -->": "1",  # TODO: handle multi-page documents
-        "<!-- %sheet_total% -->": "1",  # TODO: handle multi-page documents
+        # a multi-sheet page carries all sheets, so "current" stays 1
+        "<!-- %sheet_current% -->": "1",
+        "<!-- %sheet_total% -->": str(len(sheet_diagrams)) if sheet_diagrams else "1",
         "<!-- %template_sheetsize% -->": metadata.get("template", {}).get(
             "sheetsize", ""
         ),
@@ -97,9 +119,10 @@ def generate_html_output(
             replacements[key] = func()
 
     replacement_if_used("<!-- %diagram% -->", svgdata)
-    replacement_if_used(
-        "<!-- %diagram_png_b64% -->", lambda: data_URI_base64(f"{filename}.png")
-    )
+    if not sheet_diagrams:  # no single whole-harness PNG exists for sheets
+        replacement_if_used(
+            "<!-- %diagram_png_b64% -->", lambda: data_URI_base64(f"{filename}.png")
+        )
 
     # prepare metadata replacements
     if metadata:

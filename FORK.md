@@ -247,7 +247,11 @@ sheets:
   build list must not fragment.
 - Composes with the other options (`rankdir`, `sort_wires`, `order`, …),
   which apply per sheet. With `--merge`, define `sheets:` in one input file.
-- HTML output for multi-sheet harnesses is not supported yet.
+- HTML output is **one page carrying every sheet** in its own interactive
+  viewport, titled `Sheet n of N: <name>`, with the whole-harness BOM below.
+  Net tracing spans sheets: stubs keep the real designators, so hovering a
+  wire also lights its continuation on the other sheets, and clicking a BOM
+  row scrolls to and centers the component's sheet.
 
 ## Interactive HTML output
 
