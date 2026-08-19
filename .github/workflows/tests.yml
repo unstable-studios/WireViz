@@ -1,6 +1,12 @@
 name: Tests
 
-on: [push, pull_request, workflow_dispatch]
+# push is limited to master so a PR branch is tested once, not once per
+# event; pushes to master (merges) still get a run of their own
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   pytest:
@@ -10,15 +16,17 @@ jobs:
         python-version: ["3.9", "3.12", "3.13"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
 
       # WireViz shells out to GraphViz to render; without it the parse tests
-      # pass but anything touching output fails.
-      - uses: ts-graphviz/setup-graphviz@v2
+      # pass but anything touching output fails. Installed via apt because
+      # ts-graphviz/setup-graphviz has no Node 24 build.
+      - name: Install GraphViz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
 
       - name: Install
         run: |
