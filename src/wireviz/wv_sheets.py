@@ -27,7 +27,7 @@ sheets get stubs the same way.
 import copy
 from typing import Dict, List, Optional
 
-from wireviz.DataClasses import Connector, MatePin, Side, Tweak
+from wireviz.DataClasses import Connector, MatePin, Side
 from wireviz.Harness import Harness
 from wireviz.wv_errors import SheetError
 
@@ -64,6 +64,7 @@ def _validate(harness: Harness, sheets: dict) -> Dict[str, str]:
                 unknown.append(name)
             assignment[name] = sheet
     if unknown:
+        unknown = list(dict.fromkeys(unknown))
         raise SheetError(
             f"sheets definition references unknown designators: "
             f"{', '.join(unknown)}",
@@ -179,7 +180,7 @@ def split(harness: Harness, sheets: dict) -> "Dict[str, Harness]":
         sub = Harness(
             metadata=copy.deepcopy(harness.metadata),
             options=copy.deepcopy(harness.options),
-            tweak=Tweak(),
+            tweak=copy.deepcopy(harness.tweak),
         )
 
         # components of this sheet, in original insertion order
@@ -189,6 +190,11 @@ def split(harness: Harness, sheets: dict) -> "Dict[str, Harness]":
                 connector.ports_left = False
                 connector.ports_right = False
                 connector.visible_pins = {}
+                # loop pins are made visible at construction, not by connect;
+                # re-activate them so hide_disconnected_pins can't hide a loop
+                for loop in connector.loops:
+                    for pin in loop:
+                        connector.activate_pin(pin, None)
                 sub.connectors[name] = connector
         for name, cable in harness.cables.items():
             if assignment[name] == sheet:

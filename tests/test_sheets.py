@@ -138,6 +138,42 @@ def test_single_sheet_split_is_byte_identical():
     assert sub.graph.source == harness.graph.source
 
 
+def test_split_preserves_tweak():
+    tweaked = HARNESS + """
+tweak:
+  append: '// sheet tweak survives the split'
+"""
+    harness = _harness(tweaked)
+    (sub,) = wv_sheets.split(
+        harness, {"all": list(harness.connectors) + list(harness.cables)}
+    ).values()
+    assert sub.graph.source == harness.graph.source
+    assert "sheet tweak survives the split" in sub.graph.source
+
+
+def test_split_preserves_loop_pins():
+    looped = """
+connectors:
+  X1: {pincount: 4, loops: [[3, 4]], hide_disconnected_pins: true}
+  X2: {pincount: 2}
+cables:
+  W1: {colors: [BK, RD]}
+connections:
+  - - X1: [1-2]
+    - W1: [1-2]
+    - X2: [1-2]
+"""
+    harness = _harness(looped)
+    (sub,) = wv_sheets.split(
+        harness, {"all": list(harness.connectors) + list(harness.cables)}
+    ).values()
+    # loop pins 3/4 are visible by construction, not via connect();
+    # the split must not let hide_disconnected_pins re-hide them
+    assert sub.graph.source == harness.graph.source
+    flat = "".join(sub.graph.source.split())
+    assert 'port="p3r"' in flat and 'port="p4r"' in flat
+
+
 def test_cross_sheet_connections_end_in_stubs():
     harness = _harness(HARNESS)
     result = wv_sheets.split(
