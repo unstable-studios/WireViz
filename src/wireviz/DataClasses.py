@@ -62,6 +62,7 @@ class Options:
     ranksep: float = 2
     nodesep: float = 0.33
     wire_thickness: float = 2
+    sort_wires: Optional[str] = None
 
     def __post_init__(self):
         for attr in ("ranksep", "nodesep", "wire_thickness"):
@@ -71,6 +72,10 @@ class Options:
             # not (value > 0) also catches NaN, whose comparisons are all False
             if not (value > 0) or value == float("inf"):
                 raise ValueError(f"{attr} must be positive and finite, not {value!r}")
+        if self.sort_wires not in (None, "by_pin"):
+            raise ValueError(
+                f'sort_wires must be "by_pin" or unset, not {self.sort_wires!r}'
+            )
         if self.rankdir not in ("LR", "TB"):
             raise ValueError(
                 f'rankdir must be "LR" or "TB", not {self.rankdir!r}. '

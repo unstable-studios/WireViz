@@ -120,6 +120,27 @@ together, so wires stay flush where they meet the node; useful when pale wires
 disappear at print scale. Defaults generate byte-identical GraphViz source to
 previous versions.
 
+## `sort_wires` — untangle connection sets written against pin order
+
+Connector pins and cable wire rows are fixed HTML-table ports that GraphViz
+cannot reorder, so when a connection set lists pins in a different order than
+the wires (`X1: [4-1]` feeding `W1: [1-4]`), the mismatch is drawn as a
+crossing knot pinched between the nodes.
+
+```yaml
+options:
+  sort_wires: by_pin
+```
+
+reorders the **displayed** wire rows in each cable by the barycenter of their
+endpoint pin positions. Wire numbers, colors and the BOM are untouched; only
+the vertical position of each row changes. When both ends of a cable list
+pins against pin order, sorting straightens both sides at once. A mismatch on
+only one side (the wires genuinely reverse between the two connectors) is
+unavoidable, and is deliberately left where it is rather than moved around.
+
+Off by default; the default generates byte-identical GraphViz source.
+
 ## Tests
 
 ```sh
