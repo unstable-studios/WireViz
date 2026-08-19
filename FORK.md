@@ -201,6 +201,29 @@ options:
 Applies under both `rankdir: LR` and `TB`. The default (`full`) generates
 byte-identical GraphViz source.
 
+## `note_wrap` — wrap long notes at render time
+
+GraphViz HTML-like labels never wrap text, so a single-line `notes:` field
+sets the width of its entire node: a long note stretches the connector or
+cable table full-width and dominates the drawing. The manual workaround —
+hand-placed line breaks via YAML literal block scalars — has to be redone
+on every edit.
+
+```yaml
+options:
+  note_wrap: 100   # wrap notes at ~100 columns; off by default
+```
+
+wraps connector and cable notes at render time. Author-typed line breaks
+are kept as paragraph breaks and wrapping applies within each line; long
+unbreakable tokens (part numbers, URLs) are never split mid-token, so a
+line can exceed the limit rather than corrupt a token. Links are stripped
+before measuring, so invisible markup does not count toward the width.
+Applies under both `rankdir: LR` and `TB`. Notes never appear in the BOM,
+so the build list is unaffected.
+
+Off by default; the default generates byte-identical GraphViz source.
+
 ## `shield_style` — tell shields apart from black wires
 
 An uncoloured shield (`shield: true`) is drawn as a thin plain black line,

@@ -67,6 +67,7 @@ class Options:
     wirelabel_detail: str = "full"
     order: Optional[List[List[Designator]]] = None
     mate_labels: bool = False
+    note_wrap: Optional[int] = None
 
     def __post_init__(self):
         if self.order is not None:
@@ -98,6 +99,16 @@ class Options:
             # not (value > 0) also catches NaN, whose comparisons are all False
             if not (value > 0) or value == float("inf"):
                 raise ValueError(f"{attr} must be positive and finite, not {value!r}")
+        if self.note_wrap is not None:
+            if (
+                not isinstance(self.note_wrap, int)
+                or isinstance(self.note_wrap, bool)
+                or self.note_wrap < 1
+            ):
+                raise ValueError(
+                    f"note_wrap must be a positive integer number of columns "
+                    f"or unset, not {self.note_wrap!r}"
+                )
         if not isinstance(self.mate_labels, bool):
             raise ValueError(
                 f"mate_labels must be a bool, not {self.mate_labels!r}"
