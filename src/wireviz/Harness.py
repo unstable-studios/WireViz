@@ -174,6 +174,193 @@ class Harness:
         if to_name in self.connectors:
             self.connectors[to_name].activate_pin(to_pin, Side.LEFT)
 
+    def _pin_strip_tb(self, connector: Connector) -> List[str]:
+        """Transposed pin table for top-to-bottom layouts.
+
+        Pins run horizontally: incoming ports (p{n}l) sit on the top edge,
+        outgoing ports (p{n}r) on the bottom edge, so edges attach on the
+        faces the graph actually flows through. One column per pin; rows
+        (ports/labels/colors) are emitted only when used, mirroring the
+        left-to-right cell kinds.
+        """
+        visible = [
+            (pinindex, pinname, pinlabel, pincolor)
+            for pinindex, (pinname, pinlabel, pincolor) in enumerate(
+                zip_longest(connector.pins, connector.pinlabels, connector.pincolors)
+            )
+            if not (
+                connector.hide_disconnected_pins
+                and not connector.visible_pins.get(pinname, False)
+            )
+        ]
+        if not visible:
+            return ["<!-- all pins hidden -->"]  # Avoid Graphviz error
+
+        strip = ['<table border="0" cellspacing="0" cellpadding="3" cellborder="1">']
+        if connector.ports_left:
+            cells = "".join(
+                f'<td port="p{pinindex+1}l">{pinname}</td>'
+                for pinindex, pinname, _, _ in visible
+            )
+            strip.append(f"   <tr>{cells}</tr>")
+        if any(pinlabel for _, _, pinlabel, _ in visible):
+            cells = "".join(
+                f'<td>{pinlabel if pinlabel else ""}</td>'
+                for _, _, pinlabel, _ in visible
+            )
+            strip.append(f"   <tr>{cells}</tr>")
+        if connector.pincolors and any(
+            pincolor in wv_colors._color_hex.keys() for _, _, _, pincolor in visible
+        ):
+            text_cells = []
+            swatch_cells = []
+            for _, _, _, pincolor in visible:
+                if pincolor in wv_colors._color_hex.keys():
+                    # fmt: off
+                    text_cells.append(f'<td sides="tlr">{translate_color(pincolor, self.options.color_mode)}</td>')
+                    swatch_cells.append(
+                        '<td sides="blr"><table border="0" cellborder="1"><tr>'
+                        f'<td bgcolor="{wv_colors.translate_color(pincolor, "HEX")}" width="8" height="8" fixedsize="true"></td>'
+                        "</tr></table></td>"
+                    )
+                    # fmt: on
+                else:
+                    text_cells.append('<td rowspan="2"></td>')
+            strip.append(f"   <tr>{''.join(text_cells)}</tr>")
+            strip.append(f"   <tr>{''.join(swatch_cells)}</tr>")
+        elif connector.pincolors:
+            # no recognized color: a lone swatch row would be an empty <tr>,
+            # which GraphViz's HTML parser rejects; emit one empty row of
+            # cells instead (the LR equivalent of its empty colspan cells)
+            strip.append(f"   <tr>{'<td></td>' * len(visible)}</tr>")
+        if connector.ports_right:
+            cells = "".join(
+                f'<td port="p{pinindex+1}r">{pinname}</td>'
+                for pinindex, pinname, _, _ in visible
+            )
+            strip.append(f"   <tr>{cells}</tr>")
+        strip.append("  </table>")
+        return strip
+
+    def _wire_strip_tb(self, cable: Cable, pad: bool) -> List[str]:
+        """Transposed wire table for top-to-bottom layouts.
+
+        One label column and one stripe column per wire. The stripe cell is
+        the wire's port; its colour bands are vertical strips that stretch to
+        the full strip height, so the parallel-edge colours land flush on
+        both the top and bottom node faces.
+        """
+        strip = ['<table border="0" cellspacing="0" cellborder="0">', "   <tr>"]
+        strip.append("    <td>&nbsp;</td>")  # spacer
+
+        for i, (connection_color, wirelabel) in self._wire_display_rows(cable):
+            wireinfo = []
+            if cable.show_wirenumbers:
+                wireinfo.append(str(i))
+            colorstr = wv_colors.translate_color(
+                connection_color, self.options.color_mode
+            )
+            if colorstr:
+                wireinfo.append(colorstr)
+            if cable.wirelabels:
+                wireinfo.append(wirelabel if wirelabel is not None else "")
+
+            label_rows = [
+                f"<td><!-- {i}_in --></td>",
+                f'     <td>{":".join(wireinfo)}</td>',
+                f"<td><!-- {i}_out --></td>",
+            ]
+            # for bundles, individual wires can have part information
+            if cable.category == "bundle":
+                wireidentification = []
+                if isinstance(cable.pn, list):
+                    wireidentification.append(
+                        pn_info_string(HEADER_PN, None, remove_links(cable.pn[i - 1]))
+                    )
+                manufacturer_info = pn_info_string(
+                    HEADER_MPN,
+                    (
+                        cable.manufacturer[i - 1]
+                        if isinstance(cable.manufacturer, list)
+                        else None
+                    ),
+                    cable.mpn[i - 1] if isinstance(cable.mpn, list) else None,
+                )
+                supplier_info = pn_info_string(
+                    HEADER_SPN,
+                    (
+                        cable.supplier[i - 1]
+                        if isinstance(cable.supplier, list)
+                        else None
+                    ),
+                    cable.spn[i - 1] if isinstance(cable.spn, list) else None,
+                )
+                if manufacturer_info:
+                    wireidentification.append(html_line_breaks(manufacturer_info))
+                if supplier_info:
+                    wireidentification.append(html_line_breaks(supplier_info))
+                for attrib in wireidentification:
+                    label_rows.append(f"<td>{attrib}</td>")
+
+            strip.append('    <td><table border="0" cellspacing="0" cellborder="0">')
+            for cell in label_rows:
+                strip.append(f"     <tr>{cell}</tr>")
+            strip.append("    </table></td>")
+
+            # fmt: off
+            bgcolors = ['#000000'] + get_color_hex(connection_color, pad=pad) + ['#000000']
+            stripe_width = f"{self.options.wire_thickness:g}"
+            strip.append(f'    <td port="w{i}" cellpadding="0" width="{self.options.wire_thickness * len(bgcolors):g}">')
+            strip.append('     <table cellspacing="0" cellborder="0" border="0"><tr>')
+            for bgcolor in bgcolors:
+                strip.append(f'      <td width="{stripe_width}" bgcolor="{bgcolor if bgcolor != "" else wv_colors.default_color}" border="0"></td>')
+            strip.append("     </tr></table>")
+            strip.append("    </td>")
+            # fmt: on
+
+        if cable.shield:
+            strip.append('    <td><table border="0" cellspacing="0" cellborder="0">')
+            strip.append("     <tr><td><!-- s_in --></td></tr>")
+            strip.append("     <tr><td>Shield</td></tr>")
+            strip.append("     <tr><td><!-- s_out --></td></tr>")
+            strip.append("    </table></td>")
+            if isinstance(cable.shield, str):
+                # shield is shown with specified color and black borders
+                shield_color_hex = wv_colors.get_color_hex(cable.shield)[0]
+                attributes = (
+                    f'width="{3 * self.options.wire_thickness:g}" bgcolor="{shield_color_hex}" border="2" sides="lr"'
+                )
+            else:
+                # shield is shown as a thin black wire
+                attributes = f'width="{self.options.wire_thickness:g}" bgcolor="#000000" border="0"'
+            # fmt: off
+            strip.append(f'    <td cellpadding="0" {attributes} port="ws"></td>')
+            # fmt: on
+
+        strip.append("    <td>&nbsp;</td>")  # spacer
+        strip.append("   </tr>")
+        strip.append("  </table>")
+        return strip
+
+    @staticmethod
+    def _tb_wrapper(info_html: str, strip_marker: str, bgcolor_attr: str) -> List[str]:
+        """Node label for top-to-bottom layouts: info beside the strip.
+
+        The pin/wire strip must span the node's full height so its ports
+        touch the top and bottom node faces; stacking the component info
+        above it (as in left-to-right layouts) would leave the ports
+        interior and route edges across the info block.
+        """
+        return [
+            f'<table border="0" cellspacing="0" cellpadding="0"{bgcolor_attr}><tr>',
+            ' <td valign="middle">',
+            info_html,
+            " </td>",
+            " <td>",
+            f"  {strip_marker}",
+            " </td>",
+            "</tr></table>",
+        ]
     def _wire_display_rows(self, cable: Cable) -> List[Tuple[int, Tuple[Any, Any]]]:
         """Wire rows of a cable node in display order.
 
@@ -282,6 +469,8 @@ class Harness:
             edge_attr["penwidth"] = f"{self.options.wire_thickness:g}"
         dot.attr("edge", **edge_attr)
 
+        tb = self.options.rankdir == "TB"
+
         for connector in self.connectors.values():
             # If no wires connected (except maybe loop wires)?
             if not (connector.ports_left or connector.ports_right):
@@ -299,16 +488,33 @@ class Harness:
                      f'{connector.pincount}-pin' if connector.show_pincount else None,
                      translate_color(connector.color, self.options.color_mode) if connector.color else None,
                      html_colorbar(connector.color)],
-                    '<!-- connector table -->' if connector.style != 'simple' else None,
+                    '<!-- connector table -->' if connector.style != 'simple' and not tb else None,
                     [html_image(connector.image)],
                     [html_caption(connector.image)]]
             # fmt: on
 
             rows.extend(get_additional_component_table(self, connector))
             rows.append([html_line_breaks(connector.notes)])
-            html.extend(nested_html_table(rows, html_bgcolor_attr(connector.bgcolor)))
+            if tb and connector.style != "simple":
+                html.extend(
+                    self._tb_wrapper(
+                        "\n".join(nested_html_table(rows)),
+                        "<!-- connector table -->",
+                        html_bgcolor_attr(connector.bgcolor),
+                    )
+                )
+            else:
+                html.extend(
+                    nested_html_table(rows, html_bgcolor_attr(connector.bgcolor))
+                )
 
-            if connector.style != "simple":
+            if tb and connector.style != "simple":
+                pinhtml = self._pin_strip_tb(connector)
+                html = [
+                    row.replace("<!-- connector table -->", "\n".join(pinhtml))
+                    for row in html
+                ]
+            elif connector.style != "simple":
                 pinhtml = []
                 pinhtml.append(
                     '<table border="0" cellspacing="0" cellpadding="3" cellborder="1">'
@@ -371,10 +577,10 @@ class Harness:
                 dot.attr("edge", color="#000000:#ffffff:#000000")
                 if connector.ports_left:
                     loop_side = "l"
-                    loop_dir = "w"
+                    loop_dir = "n" if tb else "w"
                 elif connector.ports_right:
                     loop_side = "r"
-                    loop_dir = "e"
+                    loop_dir = "s" if tb else "e"
                 else:
                     raise Exception("No side for loops")
                 for loop in connector.loops:
@@ -428,14 +634,23 @@ class Harness:
                      f'{cable.length} {cable.length_unit}' if cable.length > 0 else None,
                      translate_color(cable.color, self.options.color_mode) if cable.color else None,
                      html_colorbar(cable.color)],
-                    '<!-- wire table -->',
+                    '<!-- wire table -->' if not tb else None,
                     [html_image(cable.image)],
                     [html_caption(cable.image)]]
             # fmt: on
 
             rows.extend(get_additional_component_table(self, cable))
             rows.append([html_line_breaks(cable.notes)])
-            html.extend(nested_html_table(rows, html_bgcolor_attr(cable.bgcolor)))
+            if tb:
+                html.extend(
+                    self._tb_wrapper(
+                        "\n".join(nested_html_table(rows)),
+                        "<!-- wire table -->",
+                        html_bgcolor_attr(cable.bgcolor),
+                    )
+                )
+            else:
+                html.extend(nested_html_table(rows, html_bgcolor_attr(cable.bgcolor)))
 
             wirehtml = []
             # conductor table
@@ -541,6 +756,11 @@ class Harness:
 
             wirehtml.append("   <tr><td>&nbsp;</td></tr>")
             wirehtml.append("  </table>")
+
+            if tb:
+                # replace the left-to-right wire table with its transpose;
+                # the block above still ran to define shield_color_hex etc.
+                wirehtml = self._wire_strip_tb(cable, pad)
 
             html = [
                 row.replace("<!-- wire table -->", "\n".join(wirehtml)) for row in html
