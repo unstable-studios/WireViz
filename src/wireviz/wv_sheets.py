@@ -25,11 +25,14 @@ sheets get stubs the same way.
 """
 
 import copy
+import re
 from typing import Dict, List, Optional
 
 from wireviz.DataClasses import Connector, MatePin, Side, Tweak
 from wireviz.Harness import Harness
+from wireviz.wv_bom import bom_list
 from wireviz.wv_errors import SheetError
+from wireviz.wv_helper import file_write_text, tuplelist2tsv
 
 STUB_TYPE_PREFIX = "⇒ "  # ⇒ <sheet name>
 
@@ -260,3 +263,39 @@ def split(harness: Harness, sheets: dict) -> "Dict[str, Harness]":
         result[sheet] = sub
 
     return result
+
+
+def prepare(harness: Harness, sheets: dict) -> "Dict[str, Harness]":
+    """Split and stamp each sub-harness with its sheet metadata.
+
+    ``sheet_name``, ``sheet_current`` (1-based, in definition order) and
+    ``sheet_total`` feed the HTML template's sheet placeholders.
+    """
+    result = split(harness, sheets)
+    for index, (name, sub) in enumerate(result.items(), 1):
+        sub.metadata["sheet_name"] = name
+        sub.metadata["sheet_current"] = index
+        sub.metadata["sheet_total"] = len(result)
+    return result
+
+
+def output(harness: Harness, sheets: dict, filename, fmt: tuple) -> None:
+    """Write per-sheet graphical files plus the whole-harness BOM.
+
+    Graphical formats go to ``<filename>.<sheet>.<ext>`` per sheet; the BOM
+    stays one file for the whole harness -- sheets are views for reading,
+    the build list must not fragment. HTML is rejected until the template
+    can carry multiple sheets.
+    """
+    if "html" in fmt:
+        raise SheetError(
+            "HTML output for a multi-sheet harness is not supported yet; "
+            "generate gv/png/svg/tsv instead"
+        )
+    per_sheet_formats = tuple(f for f in fmt if f != "tsv")
+    for name, sub in prepare(harness, sheets).items():
+        if per_sheet_formats:
+            safe = re.sub(r"[^\w.-]", "_", name)
+            sub.output(filename=f"{filename}.{safe}", fmt=per_sheet_formats)
+    if "tsv" in fmt:
+        file_write_text(f"{filename}.bom.tsv", tuplelist2tsv(bom_list(harness.bom())))
