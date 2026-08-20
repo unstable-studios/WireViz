@@ -87,8 +87,9 @@ jobs:
             echo "::error::expected $WHEEL, found: $(ls dist)"; exit 1; }
           python -m venv /tmp/smoke
           /tmp/smoke/bin/pip install -q "$WHEEL"
-          # the CLI prints a blank line before its banner; xargs trims it
-          REPORTED="$(/tmp/smoke/bin/wireviz --version | xargs)"
+          # the CLI prints a blank line before its banner; drop blank lines
+          # only, so any extra non-empty output still fails the compare
+          REPORTED="$(/tmp/smoke/bin/wireviz --version | sed '/^[[:space:]]*$/d')"
           echo "$REPORTED"
           test "$REPORTED" = "WireViz $VERSION" || {
             echo "::error::wireviz --version reported '$REPORTED', expected 'WireViz $VERSION'"; exit 1; }
