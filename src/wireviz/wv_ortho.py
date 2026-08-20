@@ -33,6 +33,13 @@ GraphViz's arc, which an orthogonal path cannot represent sensibly.
 
 Edges whose straight runs would share a channel are staggered onto
 separate tracks.
+
+Wires on the same electrical net (edges sharing a ``wv-net-*`` class token,
+e.g. a daisy-chain tapping one connector pin) leave their shared port on a
+common trunk and peel off one by one. Where a wire branches off another's
+run, a junction dot is drawn so the branch reads as a connection. Plain
+crossings -- between unrelated nets, or between same-net wires that have
+already branched -- are left as crossings.
 """
 
 import re
@@ -46,11 +53,15 @@ EDGE_RE = re.compile(
 NODE_RE = re.compile(r'<g id="[^"]*" class="node[^"]*">.*?</g>', re.S)
 TITLE_RE = re.compile(r"<title>([^<]*)</title>")
 PATH_D_RE = re.compile(r'(<path[^>]* d=")([^"]*)(")')
+CLASS_RE = re.compile(r'<g id="[^"]*" class="([^"]*)"')
+STROKE_RE = re.compile(r'<path[^>]* stroke="([^"]*)"')
+NET_TOKEN_RE = re.compile(r"wv(?:-|&#45;)net(?:-|&#45;)\S+")
 POINTS_RE = re.compile(r'points="([^"]*)"')
 NUM = r"[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?"
 COORD_RE = re.compile(rf"({NUM}),({NUM})")
 
 CLEARANCE = 12  # how far past a node face the gutter channels sit
+EPS = 0.01  # coordinate tolerance for "the same point" / "on the segment"
 
 
 def _endpoints(d: str) -> Optional[Tuple[float, float, float, float]]:
@@ -126,6 +137,14 @@ class _Edge:
         if self.paths:
             mid = self.paths[len(self.paths) // 2]
             self.su, self.sv, self.eu, self.ev = mid[3:]
+        # net membership (see Harness: wv-net-<cable>-w<n>, wv-net-<conn>-p<n>)
+        classes = CLASS_RE.match(block)
+        self.tokens = frozenset(
+            t.replace("&#45;", "-") for t in NET_TOKEN_RE.findall(classes.group(1))
+        ) if classes else frozenset()
+        # the median stripe's colour, for the junction dot on this wire
+        strokes = STROKE_RE.findall(block)
+        self.color = strokes[len(strokes) // 2] if strokes else "#000000"
 
     @property
     def channel(self) -> float:
@@ -252,6 +271,53 @@ def _stagger(edges: List[_Edge], spacing: float) -> List[float]:
     return result
 
 
+def _on_segment(p, a, b) -> bool:
+    """Is `p` strictly inside the axis-parallel segment a-b (not at an end)?"""
+    (pu, pv), (au, av), (bu, bv) = p, a, b
+    if abs(au - bu) < EPS:  # flow segment: constant u
+        lo, hi = min(av, bv), max(av, bv)
+        return abs(pu - au) < EPS and lo + EPS < pv < hi - EPS
+    if abs(av - bv) < EPS:  # cross segment: constant v
+        lo, hi = min(au, bu), max(au, bu)
+        return abs(pv - av) < EPS and lo + EPS < pu < hi - EPS
+    return False
+
+
+
+def _junctions(planned):
+    """Junction points between same-net wires: [(u, v, tokens, color)].
+
+    `planned` is [(edge, pts)] for every routed edge. Wires sharing a net
+    token leave their common pin on one trunk and peel off one at a time;
+    where one wire's corner sits on another's run, a branch leaves the
+    trunk and the meeting point is a real junction (a T). Plain crossings
+    get nothing -- even between same-net wires: two branches that cross
+    again downstream are joined at the pin, not where they happen to cross,
+    and a dot there would read as a splice that does not exist.
+    """
+    found = {}
+    for i, (a, pa) in enumerate(planned):
+        for b, pb in planned[i + 1:]:
+            shared = a.tokens & b.tokens
+            if not shared:
+                continue
+            points = []
+            # a corner of one wire on a segment of the other; the dot takes
+            # the colour of the wire that branches off there
+            for branch, pts, other in ((a, pa, pb), (b, pb, pa)):
+                for c in pts[1:-1]:
+                    for s0, s1 in zip(other, other[1:]):
+                        if _on_segment(c, s0, s1):
+                            points.append((c, branch.color))
+            for (u, v), color in points:
+                key = (round(u, 1), round(v, 1))
+                if key not in found:
+                    found[key] = (u, v, set(shared), color)
+                else:
+                    found[key][2].update(shared)
+    return list(found.values())
+
+
 def orthogonalize(svg: str, rankdir: str, wire_thickness: float) -> str:
     """Rewrite every wire edge in `svg` as an orthogonal polyline."""
     vertical = rankdir == "TB"
@@ -281,12 +347,31 @@ def orthogonalize(svg: str, rankdir: str, wire_thickness: float) -> str:
     margin = max_stripes * wire_thickness / 2 + 2
     channels = _stagger(edges, spacing)
 
+    plans = [edge.plan(channel, boxes, margin) for edge, channel in zip(edges, channels)]
+
     out = []
     last = 0
-    for edge, channel, (start, end) in zip(edges, channels, spans):
-        pts = edge.plan(channel, boxes, margin)
+    for edge, pts, (start, end) in zip(edges, plans, spans):
         out.append(svg[last:start])
         out.append(edge.rewritten(pts) if pts else edge.block)
         last = end
     out.append(svg[last:])
-    return "".join(out)
+    result = "".join(out)
+
+    # junction dots go last inside the graph group so they draw above wires
+    dots = _junctions([(e, p) for e, p in zip(edges, plans) if p])
+    if dots:
+        radius = max_stripes * wire_thickness / 2 + 1.5 * wire_thickness
+        circles = []
+        for u, v, tokens, color in dots:
+            x, y = (u, v) if vertical else (v, u)
+            classes = " ".join(["wv-junction"] + sorted(tokens))
+            circles.append(
+                f'<g class="{classes}"><circle cx="{_fmt(x)}" cy="{_fmt(y)}" '
+                f'r="{_fmt(radius)}" fill="{color}" stroke="none"/></g>'
+            )
+        tail = "</g>\n</svg>"
+        cut = result.rfind(tail)
+        if cut != -1:
+            result = result[:cut] + "\n".join(circles) + "\n" + result[cut:]
+    return result

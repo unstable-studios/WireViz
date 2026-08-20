@@ -68,12 +68,15 @@
     }
 
     #diagram svg g.edge,
+    #diagram svg g.wv-junction,
     #diagram svg g.node {
       transition: opacity .12s;
     }
 
-    /* A hovered net keeps its wires at full strength; other edges recede. */
-    #diagram svg.wv-focus-net g.edge:not(.wv-hl) {
+    /* A hovered net keeps its wires and junction dots at full strength;
+       other edges recede. */
+    #diagram svg.wv-focus-net g.edge:not(.wv-hl),
+    #diagram svg.wv-focus-net g.wv-junction:not(.wv-hl) {
       opacity: .12;
     }
 
@@ -82,7 +85,8 @@
       opacity: .25;
     }
 
-    #diagram svg.wv-focus-part g.edge {
+    #diagram svg.wv-focus-part g.edge,
+    #diagram svg.wv-focus-part g.wv-junction {
       opacity: .12;
     }
 
@@ -282,8 +286,8 @@
     });
     viewport.addEventListener("pointerup", function (event) {
       // a click (not a drag) on empty space clears the BOM part selection;
-      // clicks on nodes or edges leave it alone
-      var onElement = event.target.closest && event.target.closest("g.node, g.edge");
+      // clicks on nodes, edges or junction dots leave it alone
+      var onElement = event.target.closest && event.target.closest("g.node, g.edge, g.wv-junction");
       if (pan && !pan.moved && !onElement) clearPartFocus();
       pan = null;
       viewport.classList.remove("wv-panning");
@@ -354,19 +358,26 @@
   }
 
   var wires = [];
+  // junction dots (orthogonal routing) carry the tokens of the net they
+  // join; they light up and fade with their net but are not hover targets
+  var junctions = [];
   svgs.forEach(function (svg) {
     Array.prototype.forEach.call(svg.querySelectorAll("g.edge"), function (el) {
       if (el.classList.contains("wv-wire")) wires.push(el);
     });
+    Array.prototype.forEach.call(svg.querySelectorAll("g.wv-junction"), function (el) {
+      junctions.push(el);
+    });
   });
-  wires.forEach(function (el) {
+  var netMembers = wires.concat(junctions);
+  netMembers.forEach(function (el) {
     var tokens = netTokens(el);
     tokens.forEach(function (token) { union(tokens[0], token); });
   });
 
-  // net root -> member edges, built once so hover lookups are O(1)
+  // net root -> member edges and junctions, built once so hover lookups are O(1)
   var nets = {};
-  wires.forEach(function (el) {
+  netMembers.forEach(function (el) {
     var tokens = netTokens(el);
     if (!tokens.length) return;
     var root = find(tokens[0]);
@@ -403,7 +414,7 @@
     });
     el.addEventListener("mouseleave", function () {
       setNetFocus(false);
-      wires.forEach(function (member) { member.classList.remove("wv-hl"); });
+      netMembers.forEach(function (member) { member.classList.remove("wv-hl"); });
     });
   });
 
