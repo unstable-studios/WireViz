@@ -34,6 +34,8 @@
       position: relative;
       cursor: grab;
       touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     /* multi-sheet pages: #diagram is a plain wrapper, each sheet has its
@@ -44,6 +46,8 @@
       height: auto;
       cursor: default;
       touch-action: auto;
+      user-select: auto;
+      -webkit-user-select: auto;
     }
 
     .wv-viewport {
@@ -262,6 +266,8 @@
     var pan = null;
     viewport.addEventListener("pointerdown", function (event) {
       if (event.button !== 0) return;
+      // stop the browser starting a native text selection alongside the pan
+      event.preventDefault();
       pan = { x: event.clientX, y: event.clientY, moved: false };
       viewport.classList.add("wv-panning");
       try { viewport.setPointerCapture(event.pointerId); } catch (ignored) {}
