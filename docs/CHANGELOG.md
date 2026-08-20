@@ -1,5 +1,41 @@
 # Change Log
 
+## [0.5.0](https://github.com/unstable-studios/WireViz/compare/v0.4.1...v0.5.0) (2026-08-20)
+
+
+### Features
+
+* add --merge to build one harness from several files ([c155663](https://github.com/unstable-studios/WireViz/commit/c155663762e9f2cbf38c50aa91809627ca453d68))
+* add --strict to reject silently dropped input ([5400a27](https://github.com/unstable-studios/WireViz/commit/5400a2704863248185af989aed8871115be26b62))
+* add options.rankdir, and make port compass points follow it ([1d70f73](https://github.com/unstable-studios/WireViz/commit/1d70f73be2208548e1a77e4f06c6a7c58ea30523))
+* **html:** interactive diagrams — pan/zoom, net tracing, BOM linkage ([#17](https://github.com/unstable-studios/WireViz/issues/17)) ([1690b63](https://github.com/unstable-studios/WireViz/commit/1690b63c487469f5cc0e9cb3c47cc83570b9f115))
+* **html:** print stylesheet and dark mode for the simple template ([#24](https://github.com/unstable-studios/WireViz/issues/24)) ([c80b2a6](https://github.com/unstable-studios/WireViz/commit/c80b2a6189ef7f7861ea58fc9c987f436f8f2ef7))
+* **html:** widen the wire hover target ([#22](https://github.com/unstable-studios/WireViz/issues/22)) ([84b4833](https://github.com/unstable-studios/WireViz/commit/84b48335a3d15bac6574cadda036c3975b6e7345))
+* **layout:** add mate_labels option to annotate mate arrows ([#25](https://github.com/unstable-studios/WireViz/issues/25)) ([68aaf71](https://github.com/unstable-studios/WireViz/commit/68aaf714c097f18701db78c3fd478b6f0ba430ad))
+* **layout:** add note_wrap option to wrap long notes at render time ([#34](https://github.com/unstable-studios/WireViz/issues/34)) ([e26479e](https://github.com/unstable-studios/WireViz/commit/e26479e2c74f42a6037fd25a2a47fb65351e2c15))
+* **layout:** add options.order to pin down node stacking within a rank ([#23](https://github.com/unstable-studios/WireViz/issues/23)) ([762d6f9](https://github.com/unstable-studios/WireViz/commit/762d6f9abf9605168db3c65a94c2b82cbebc1321))
+* **layout:** add options.sort_wires to untangle wire-row crossings ([#16](https://github.com/unstable-studios/WireViz/issues/16)) ([5dd1ab7](https://github.com/unstable-studios/WireViz/commit/5dd1ab7c149ee66a38f814c3fa855bda347feb4b))
+* **layout:** add shield_style option to distinguish shields from black wires ([#27](https://github.com/unstable-studios/WireViz/issues/27)) ([e3d83c1](https://github.com/unstable-studios/WireViz/commit/e3d83c1a328767fa7e56f59f2015968a7dd96ef8)), closes [#9](https://github.com/unstable-studios/WireViz/issues/9)
+* **layout:** add wirelabel_detail option to abbreviate in-cable labels ([#26](https://github.com/unstable-studios/WireViz/issues/26)) ([91f4a8b](https://github.com/unstable-studios/WireViz/commit/91f4a8beb40d6579bdf00625963d4ace2b8b5402)), closes [#11](https://github.com/unstable-studios/WireViz/issues/11)
+* **layout:** orthogonal wire routing + flush TB colour bars ([#37](https://github.com/unstable-studios/WireViz/issues/37)) ([29102ce](https://github.com/unstable-studios/WireViz/commit/29102ce65630a0af12a721d1a60e3cc0eae7ffa7))
+* **layout:** transpose node tables so rankdir TB renders correctly ([#18](https://github.com/unstable-studios/WireViz/issues/18)) ([a6a6bec](https://github.com/unstable-studios/WireViz/commit/a6a6bec7e6675a81587cd2378a0f38de35d17e85))
+* **options:** expose ranksep, nodesep, and wire_thickness ([#15](https://github.com/unstable-studios/WireViz/issues/15)) ([b04978b](https://github.com/unstable-studios/WireViz/commit/b04978b476ca3e56bc5127622460c3e977629a36))
+* **routing:** draw junction dots where same-net wires meet ([#41](https://github.com/unstable-studios/WireViz/issues/41)) ([6b584a1](https://github.com/unstable-studios/WireViz/commit/6b584a170088df685d1193d19c80deffb7389f1b))
+* **routing:** make the orthogonal router avoid node boxes ([#39](https://github.com/unstable-studios/WireViz/issues/39)) ([1f18386](https://github.com/unstable-studios/WireViz/commit/1f183863014262ca9b58d2112c6a671ddbe9b3d4))
+* **sheets:** multi-sheet interactive HTML output ([#30](https://github.com/unstable-studios/WireViz/issues/30)) ([1f4dd3e](https://github.com/unstable-studios/WireViz/commit/1f4dd3e33c61d98e3d1833ece48ff65c2d9b709c)), closes [#14](https://github.com/unstable-studios/WireViz/issues/14)
+* **sheets:** per-sheet file outputs and sheet metadata ([#29](https://github.com/unstable-studios/WireViz/issues/29)) ([6b32d73](https://github.com/unstable-studios/WireViz/commit/6b32d73569f21b5fbba00cacc803f54bf06d8353))
+* **sheets:** split a harness into per-sheet sub-harnesses ([#28](https://github.com/unstable-studios/WireViz/issues/28)) ([0665d63](https://github.com/unstable-studios/WireViz/commit/0665d632c2009c5f25c4826039a4ae4853310759))
+
+
+### Bug Fixes
+
+* **html:** stop text selection while panning the interactive viewer ([#40](https://github.com/unstable-studios/WireViz/issues/40)) ([7bfe931](https://github.com/unstable-studios/WireViz/commit/7bfe9313b0035d4ffec928cf72b0e7b156924cf4))
+
+
+### Documentation
+
+* record that TB is not finished, and why ([fa2700c](https://github.com/unstable-studios/WireViz/commit/fa2700c1a82b27798a11837952f582680583ac82))
+
 ## [0.4.1] (2024-07-13)
 
 ### Improvements to help reported issues
