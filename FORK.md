@@ -352,6 +352,38 @@ them through to SVG, where the template's script unions the tokens into nets.
 The attributes are inert in PNG/SVG-only output and available to any
 downstream tooling. Custom templates (e.g. `din-6771`) are unchanged.
 
+## Releases
+
+Releases are cut by [release-please](https://github.com/googleapis/release-please)
+from conventional commits, via the org's shared workflows
+(`.github/workflows/release.yml`):
+
+1. Every push to `master` runs release-please, which opens or updates a
+   **release PR** bumping `__version__` in `src/wireviz/__init__.py` and
+   prepending the new section to `docs/CHANGELOG.md`. `feat:` bumps the minor
+   version, `fix:` the patch (pre-1.0 semantics; `bump-minor-pre-major` is off).
+2. Merging the release PR tags `v<version>` and creates the GitHub Release.
+3. In the same run, the `build` job builds the sdist and wheel
+   (`python -m build`), installs the wheel into a clean venv, checks
+   `wireviz --version` matches the tag and renders an example through it,
+   then attaches both files to the GitHub Release.
+4. `publish-relay` pushes the same files to Relay (org `unstable-studios`,
+   product `wireviz`) through the shared `publish-relay.yml` workflow.
+
+`workflow_dispatch` with an existing tag re-runs steps 3-4 for that tag.
+The workflow needs two repository secrets: `GH_PAT_RELEASEPLEASE` (so the
+tag and release PR are created by a real user token) and `RELAY_API_SECRET`.
+
+Install a release with the wheel URL from the GitHub Release or Relay, or
+pin the tag directly:
+
+```bash
+pip install git+https://github.com/unstable-studios/WireViz@v0.5.0
+```
+
+The package name stays `wireviz` (this fork is not published to PyPI), so
+the tag or wheel URL is the only thing to pin.
+
 ## Tests
 
 ```sh

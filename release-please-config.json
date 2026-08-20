@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "1c4fd68a2e34e12ff1513aac52323890c6a8c695",
+  "bump-minor-pre-major": false,
+  "pull-request-title-pattern": "chore(release): ${version}",
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "wireviz",
+      "changelog-path": "docs/CHANGELOG.md",
+      "include-component-in-tag": false,
+      "tag-template": "v${version}",
+      "extra-files": ["src/wireviz/__init__.py"],
+      "changelog-sections": [
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "perf", "section": "Performance" },
+        { "type": "docs", "section": "Documentation" },
+        { "type": "refactor", "section": "Refactoring" },
+        { "type": "chore", "section": "Miscellaneous", "hidden": true }
+      ]
+    }
+  }
+}
