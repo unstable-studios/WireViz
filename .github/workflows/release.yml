@@ -122,7 +122,7 @@ jobs:
       artifact-name: release-artifacts
       artifact-path: "*"
       file-names: >-
-        {"wireviz-${{ needs.build.outputs.version }}-py3-none-any.whl": "Python wheel",
-         "wireviz-${{ needs.build.outputs.version }}.tar.gz": "Source distribution"}
+        {"wireviz-${{ needs.build.outputs.version }}-py3-none-any.whl": "WireViz Python wheel",
+         "wireviz-${{ needs.build.outputs.version }}.tar.gz": "WireViz source distribution"}
     secrets:
       RELAY_API_SECRET: ${{ secrets.RELAY_API_SECRET }}
