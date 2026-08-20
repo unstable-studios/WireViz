@@ -254,10 +254,14 @@ Scope and limitations:
   `png` and `gv` keep GraphViz's splines.
 - Pin loops keep their arc (an orthogonal loop on one node face has no
   sensible shape), and mate arrows keep their dashed curves.
-- The router is deliberately simple (one turn per wire, midpoint channel
-  with staggering). It does not avoid node boxes; with default `ranksep`
-  the channels sit safely between ranks, but extreme stagger fan-out on a
-  very congested channel could reach a node.
+- Routing is collision-aware: every node's bounding box is an obstacle.
+  Each wire tries the one-turn route first (on its staggered channel,
+  then through the gutters just past its source and destination); a wire
+  that would cross a node — typically one spanning several ranks — takes
+  a two-turn detour through a clear lane beside the blocking boxes. A
+  wire the router cannot place cleanly keeps its GraphViz spline, so a
+  congested sheet degrades to a mixed drawing instead of drawing wires
+  over nodes and note text.
 
 Off by default; unset, the SVG is byte-identical to the spline output.
 
