@@ -80,11 +80,17 @@ jobs:
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
+          # the wheel's filename and --version must both match the tag exactly;
+          # a stale __version__ would otherwise ship under the wrong tag
+          WHEEL="dist/wireviz-$VERSION-py3-none-any.whl"
+          test -f "$WHEEL" || {
+            echo "::error::expected $WHEEL, found: $(ls dist)"; exit 1; }
           python -m venv /tmp/smoke
-          /tmp/smoke/bin/pip install -q dist/wireviz-*.whl
-          /tmp/smoke/bin/wireviz --version | tee /tmp/version.txt
-          grep -q "$VERSION" /tmp/version.txt || {
-            echo "::error::wheel reports a different version than tag v$VERSION"; exit 1; }
+          /tmp/smoke/bin/pip install -q "$WHEEL"
+          REPORTED="$(/tmp/smoke/bin/wireviz --version)"
+          echo "$REPORTED"
+          test "$REPORTED" = "WireViz $VERSION" || {
+            echo "::error::wireviz --version reported '$REPORTED', expected 'WireViz $VERSION'"; exit 1; }
           # a full render through the installed package, including the HTML template
           /tmp/smoke/bin/wireviz examples/ex01.yml -f hs -o /tmp/smoke-out
           test -s /tmp/smoke-out/ex01.html && test -s /tmp/smoke-out/ex01.svg
