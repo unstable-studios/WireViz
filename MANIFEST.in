@@ -1,0 +1,4 @@
+# Files setup.py reads at build time, so the wheel can be built from the sdist
+include docs/README.md
+include LICENSE
+include FORK.md

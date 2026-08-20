@@ -9,6 +9,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  # release-please's PRs only touch the version, changelog and manifest;
+  # validate their shape (shared check) in addition to running the suite
+  release-check:
+    if: startsWith(github.head_ref, 'release-please') || github.actor == 'release-please[bot]'
+    uses: unstable-studios/.github/.github/workflows/release-pr-check.yml@main
+
   pytest:
     strategy:
       fail-fast: false

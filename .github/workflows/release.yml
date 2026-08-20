@@ -1,0 +1,120 @@
+name: Release
+
+# Driven by conventional commits. On each push to master, release-please opens
+# (or updates) a release PR that bumps __version__ + docs/CHANGELOG.md; merging
+# that PR tags the release and cuts a GitHub Release. Build and publish are
+# CHAINED off release-please's output in the same run (relay's pattern) rather
+# than triggered by the tag push, so they run regardless of which token cut the
+# tag. `workflow_dispatch` rebuilds and republishes an existing tag.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing git tag to rebuild and publish (e.g. v0.5.0)"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    if: github.event_name == 'push'
+    uses: unstable-studios/.github/.github/workflows/release-please.yml@main
+    secrets:
+      GH_PAT_RELEASEPLEASE: ${{ secrets.GH_PAT_RELEASEPLEASE }}
+
+  build:
+    name: Build & attach artifacts
+    needs: release-please
+    # release-please is skipped on dispatch; always() lets this job still run then
+    if: >-
+      always() && (
+        needs.release-please.outputs.release_created == 'true'
+        || github.event_name == 'workflow_dispatch'
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - name: Resolve tag and version
+        id: meta
+        run: |
+          TAG="${{ inputs.tag || needs.release-please.outputs.tag_name }}"
+          if [ -z "$TAG" ]; then
+            echo "::error::No tag to build (release-please produced none and no tag was given)"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.meta.outputs.tag }}
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # the smoke test renders a harness, which shells out to GraphViz
+      - name: Install GraphViz
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq graphviz
+
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+          ls -l dist/
+
+      - name: Smoke-test the wheel
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install -q dist/wireviz-*.whl
+          /tmp/smoke/bin/wireviz --version | tee /tmp/version.txt
+          grep -q "$VERSION" /tmp/version.txt || {
+            echo "::error::wheel reports a different version than tag v$VERSION"; exit 1; }
+          # a full render through the installed package, including the HTML template
+          /tmp/smoke/bin/wireviz examples/ex01.yml -f hs -o /tmp/smoke-out
+          test -s /tmp/smoke-out/ex01.html && test -s /tmp/smoke-out/ex01.svg
+
+      - name: Attach artifacts to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: gh release upload "$TAG" dist/* --clobber
+
+      - name: Upload artifacts for Relay
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/*
+          if-no-files-found: error
+
+  publish-relay:
+    name: Publish to Relay
+    needs: build
+    if: always() && needs.build.result == 'success'
+    uses: unstable-studios/.github/.github/workflows/publish-relay.yml@main
+    with:
+      org: unstable-studios
+      product: wireviz
+      version: ${{ needs.build.outputs.version }}
+      artifact-name: release-artifacts
+      artifact-path: "*"
+      file-names: >-
+        {"wireviz-${{ needs.build.outputs.version }}-py3-none-any.whl": "Python wheel",
+         "wireviz-${{ needs.build.outputs.version }}.tar.gz": "Source distribution"}
+    secrets:
+      RELAY_API_SECRET: ${{ secrets.RELAY_API_SECRET }}
