@@ -265,10 +265,12 @@ Scope and limitations:
 - Junction dots mark real connections. Wires on one electrical net (two
   cables tapping the same connector pin, a daisy-chain) leave their shared
   pin on a common trunk and peel off one at a time; where a wire branches
-  off another's run, or two same-net runs cross, a dot in the wire's
-  colour is drawn, as on a schematic. Wires of unrelated nets that merely
-  cross each other get no dot. The dots carry the net's `wv-net-*` tokens,
-  so in the HTML page they light up and fade with their net.
+  off another's run, a dot in the wire's colour is drawn, as on a
+  schematic. Wires that merely cross each other get no dot -- whether of
+  unrelated nets, or same-net wires that cross again after branching
+  (they are joined at the pin, not there). The dots carry the net's
+  `wv-net-*` tokens, so in the HTML page they light up and fade with
+  their net.
 
 Off by default; unset, the SVG is byte-identical to the spline output.
 

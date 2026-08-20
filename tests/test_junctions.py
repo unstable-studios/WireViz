@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """Tests for junction dots under ``options.routing: orthogonal``.
 
-The property being defended: a dot marks every point where two wires of
-the same electrical net meet mid-run -- a branch peeling off a shared
-trunk (T) or two runs crossing (X) -- and nowhere else. Wires of
-unrelated nets that cross get no dot, the default spline output gets no
-dots at all, and each dot carries its net's ``wv-net-*`` tokens so the
-HTML viewer can highlight it with the net.
+The property being defended: a dot marks every point where a wire
+branches off another wire of the same electrical net -- a corner sitting
+on the shared trunk -- and nowhere else. Crossings never get a dot, not
+even between same-net wires (they are joined at the pin, not where the
+router happens to cross them), the default spline output gets no dots at
+all, and each dot carries its net's ``wv-net-*`` tokens so the HTML
+viewer can highlight it with the net.
 """
 
 import re
@@ -170,11 +171,13 @@ def test_branch_off_a_trunk_is_a_junction():
     assert dots[0][2] == {"wv-net-a"}
 
 
-def test_crossing_runs_are_a_junction():
-    flow = [(10, 0), (10, 80)]
-    cross = [(0, 40), (30, 40)]
-    dots = _junctions([(_edge({"wv-net-a"}), flow), (_edge({"wv-net-a"}), cross)])
-    assert [(u, v) for u, v, *_ in dots] == [(10, 40)]
+def test_same_net_wires_crossing_downstream_are_not_a_junction():
+    # two branches off one pin that cross again later: joined at the pin,
+    # not at the crossing, so no dot there
+    a = [(10, 0), (10, 30), (60, 30), (60, 80)]
+    b = [(10, 0), (10, 50), (90, 50), (90, 80)]
+    dots = _junctions([(_edge({"wv-net-a"}), a), (_edge({"wv-net-a"}), b)])
+    assert [(u, v) for u, v, *_ in dots] == [(10, 30)]  # only the branch
 
 
 def test_different_nets_never_junction():

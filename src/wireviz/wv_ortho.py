@@ -36,10 +36,10 @@ separate tracks.
 
 Wires on the same electrical net (edges sharing a ``wv-net-*`` class token,
 e.g. a daisy-chain tapping one connector pin) leave their shared port on a
-common trunk and peel off one by one. Where a same-net wire branches off
-another's run (a T), or two same-net runs cross (an X), a junction dot is
-drawn so the connection reads as a connection; crossings between unrelated
-nets are left as plain crossings.
+common trunk and peel off one by one. Where a wire branches off another's
+run, a junction dot is drawn so the branch reads as a connection. Plain
+crossings -- between unrelated nets, or between same-net wires that have
+already branched -- are left as crossings.
 """
 
 import re
@@ -283,26 +283,17 @@ def _on_segment(p, a, b) -> bool:
     return False
 
 
-def _crossing(a, b, c, d):
-    """Interior intersection of perpendicular segments a-b and c-d, or None."""
-    (au, av), (bu, bv), (cu, cv), (du, dv) = a, b, c, d
-    if abs(au - bu) < EPS and abs(cv - dv) < EPS:  # a-b flow, c-d cross
-        if min(cu, du) + EPS < au < max(cu, du) - EPS and min(av, bv) + EPS < cv < max(av, bv) - EPS:
-            return (au, cv)
-    elif abs(av - bv) < EPS and abs(cu - du) < EPS:  # a-b cross, c-d flow
-        if min(au, bu) + EPS < cu < max(au, bu) - EPS and min(cv, dv) + EPS < av < max(cv, dv) - EPS:
-            return (cu, av)
-    return None
-
 
 def _junctions(planned):
     """Junction points between same-net wires: [(u, v, tokens, color)].
 
-    `planned` is [(edge, pts)] for every routed edge. Two wires sharing a
-    net token are electrically connected, so wherever one's corner sits on
-    the other's run (a branch peeling off the shared trunk) or their runs
-    cross, the meeting point is a real junction. Unrelated nets that merely
-    cross each other get nothing.
+    `planned` is [(edge, pts)] for every routed edge. Wires sharing a net
+    token leave their common pin on one trunk and peel off one at a time;
+    where one wire's corner sits on another's run, a branch leaves the
+    trunk and the meeting point is a real junction (a T). Plain crossings
+    get nothing -- even between same-net wires: two branches that cross
+    again downstream are joined at the pin, not where they happen to cross,
+    and a dot there would read as a splice that does not exist.
     """
     found = {}
     for i, (a, pa) in enumerate(planned):
@@ -311,18 +302,12 @@ def _junctions(planned):
             if not shared:
                 continue
             points = []
-            # T: a corner of one wire on a segment of the other
+            # a corner of one wire on a segment of the other
             for corners, other in ((pa[1:-1], pb), (pb[1:-1], pa)):
                 for c in corners:
                     for s0, s1 in zip(other, other[1:]):
                         if _on_segment(c, s0, s1):
                             points.append(c)
-            # X: two runs crossing mid-segment
-            for s0, s1 in zip(pa, pa[1:]):
-                for t0, t1 in zip(pb, pb[1:]):
-                    x = _crossing(s0, s1, t0, t1)
-                    if x:
-                        points.append(x)
             for u, v in points:
                 key = (round(u, 1), round(v, 1))
                 if key not in found:
