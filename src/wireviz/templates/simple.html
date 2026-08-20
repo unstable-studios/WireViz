@@ -286,8 +286,8 @@
     });
     viewport.addEventListener("pointerup", function (event) {
       // a click (not a drag) on empty space clears the BOM part selection;
-      // clicks on nodes or edges leave it alone
-      var onElement = event.target.closest && event.target.closest("g.node, g.edge");
+      // clicks on nodes, edges or junction dots leave it alone
+      var onElement = event.target.closest && event.target.closest("g.node, g.edge, g.wv-junction");
       if (pan && !pan.moved && !onElement) clearPartFocus();
       pan = null;
       viewport.classList.remove("wv-panning");

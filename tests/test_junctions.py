@@ -180,6 +180,15 @@ def test_same_net_wires_crossing_downstream_are_not_a_junction():
     assert [(u, v) for u, v, *_ in dots] == [(10, 30)]  # only the branch
 
 
+def test_dot_takes_the_branching_wires_colour():
+    # whichever side of the pair the branch is on, its own colour wins
+    trunk = [(10, 0), (10, 50), (40, 50), (40, 80)]
+    branch = [(10, 0), (10, 30), (-20, 30), (-20, 80)]
+    a, b = _edge({"wv-net-a"}, "#000"), _edge({"wv-net-a"}, "#f00")
+    assert _junctions([(a, trunk), (b, branch)])[0][3] == "#f00"
+    assert _junctions([(b, branch), (a, trunk)])[0][3] == "#f00"
+
+
 def test_different_nets_never_junction():
     trunk = [(10, 0), (10, 50), (40, 50), (40, 80)]
     branch = [(10, 0), (10, 30), (-20, 30), (-20, 80)]

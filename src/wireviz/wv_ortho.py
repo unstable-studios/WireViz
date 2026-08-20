@@ -302,16 +302,17 @@ def _junctions(planned):
             if not shared:
                 continue
             points = []
-            # a corner of one wire on a segment of the other
-            for corners, other in ((pa[1:-1], pb), (pb[1:-1], pa)):
-                for c in corners:
+            # a corner of one wire on a segment of the other; the dot takes
+            # the colour of the wire that branches off there
+            for branch, pts, other in ((a, pa, pb), (b, pb, pa)):
+                for c in pts[1:-1]:
                     for s0, s1 in zip(other, other[1:]):
                         if _on_segment(c, s0, s1):
-                            points.append(c)
-            for u, v in points:
+                            points.append((c, branch.color))
+            for (u, v), color in points:
                 key = (round(u, 1), round(v, 1))
                 if key not in found:
-                    found[key] = (u, v, set(shared), a.color)
+                    found[key] = (u, v, set(shared), color)
                 else:
                     found[key][2].update(shared)
     return list(found.values())
