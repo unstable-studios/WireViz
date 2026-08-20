@@ -266,7 +266,8 @@ def test_multi_rank_wires_avoid_node_boxes():
 
 @needs_dot
 def test_multi_rank_wires_avoid_node_boxes_lr():
-    _assert_no_node_crossings(_harness(DIAMOND.replace("rankdir: TB", "rankdir: LR")).svg)
+    svg = _harness(DIAMOND.replace("rankdir: TB", "rankdir: LR")).svg
+    assert _assert_no_node_crossings(svg) == 0  # solvable: no fallbacks either
 
 
 def test_boxed_in_wire_falls_back_to_the_spline():

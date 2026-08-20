@@ -85,8 +85,12 @@ def _node_boxes(svg: str, vertical: bool) -> List[Tuple[float, float, float, flo
 
 
 def _hits(pts, boxes, margin: float):
-    """The boxes any segment of the axis-parallel polyline passes through."""
-    hit = []
+    """The boxes any segment of the axis-parallel polyline passes through.
+
+    Each box is reported once, in first-hit order, so callers deriving lane
+    candidates from the blockers stay bounded on dense diagrams.
+    """
+    hit = {}
     for (u1, v1), (u2, v2) in zip(pts, pts[1:]):
         ulo, uhi = min(u1, u2), max(u1, u2)
         vlo, vhi = min(v1, v2), max(v1, v2)
@@ -98,8 +102,8 @@ def _hits(pts, boxes, margin: float):
                 and vhi > c0 - margin
                 and vlo < c1 + margin
             ):
-                hit.append(box)
-    return hit
+                hit[box] = True
+    return list(hit)
 
 
 class _Edge:
@@ -165,7 +169,7 @@ class _Edge:
             v1 = self.sv + direction * CLEARANCE
             v2 = self.ev - direction * CLEARANCE
             lanes = []
-            for box in blockers:
+            for box in dict.fromkeys(blockers):  # candidates may re-hit a box
                 lanes.append(box[0] - margin - CLEARANCE)
                 lanes.append(box[2] + margin + CLEARANCE)
             lanes.sort(key=lambda u: abs(u - (self.su + self.eu) / 2))
